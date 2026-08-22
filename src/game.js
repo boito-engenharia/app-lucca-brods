@@ -380,7 +380,8 @@ $('btn-sound').addEventListener('click', () => { const on = SFX.toggle(); $('btn
 $('btn-play').addEventListener('click', () => { SFX.unlock(); MUSIC.setMood('menu'); newGame(); });
 $('btn-how').addEventListener('click', () => { SFX.unlock(); MUSIC.setMood('menu'); $('how').classList.remove('hidden'); });
 $('btn-how-close').addEventListener('click', () => { $('how').classList.add('hidden'); });
-$('players-range').addEventListener('input', e => { $('players-val').textContent = e.target.value; });
+function renderCrowd() { const n = +$('players-range').value; $('players-val').textContent = n; const c = $('crowd'); c.innerHTML = ''; for (let i = 0; i < n; i++) { const d = document.createElement('i'); const col = i === 0 ? '#ffd300' : VENUS_COLORS[i % VENUS_COLORS.length].css; d.style.background = col; c.appendChild(d); } }
+$('players-range').addEventListener('input', renderCrowd); renderCrowd();
 
 // ---------- Desenho ----------
 function resize() {
