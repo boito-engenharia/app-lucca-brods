@@ -18,11 +18,14 @@
   <div id="hud" class="hidden">
     <div id="hud-top">
       <div id="task-panel">
-        <div id="task-title">MISSÕES <span id="task-count">0/0</span></div>
+        <div id="task-title">MISSÕES <span id="task-count">0%</span></div>
         <div id="task-bar"><div id="task-fill"></div></div>
         <ul id="task-list"></ul>
       </div>
-      <div id="room-name">Mansão</div>
+      <div id="hud-center">
+        <div id="room-name">Mansão</div>
+        <div id="role-banner" class="venus">VENUS</div>
+      </div>
       <div id="hud-right">
         <button id="btn-sound" class="icon-btn" title="Som">🔊</button>
         <button id="btn-menu" class="icon-btn" title="Menu">☰</button>
@@ -30,12 +33,16 @@
     </div>
     <div id="prompt" class="hidden"><span class="key">E</span> <span id="prompt-text">Usar</span></div>
     <div id="toast" class="hidden"></div>
+    <div id="ghost-note" class="hidden">👻 Você virou fantasma — agora só observa (atravessa paredes).</div>
     <div id="touch-ui">
       <div id="joystick"><div id="joy-base"><div id="joy-knob"></div></div></div>
       <div id="touch-buttons">
+        <button id="btn-kill" class="act-btn kill hidden">MATAR</button>
+        <button id="btn-report" class="act-btn report">REPORTAR</button>
         <button id="btn-use" class="act-btn">USAR</button>
       </div>
     </div>
+    <div id="cooldown" class="hidden"><span id="cd-label">MATAR</span> <span id="cd-val"></span></div>
   </div>
 
   <!-- Minigame overlay -->
@@ -52,30 +59,64 @@
       <img id="start-logo" alt="BRODS">
       <p class="tagline">Mistério na Mansão Assombrada</p>
       <div id="start-roles">
-        <div class="role-chip venus"><img data-sprite="venus_front" alt=""><span>VENUS</span></div>
-        <div class="role-chip demom"><img data-sprite="demom_front" alt=""><span>DEMOM</span></div>
-        <div class="role-chip chefe"><img data-sprite="chefe_front" alt=""><span>CHEFE</span></div>
+        <div class="role-chip venus"><img data-sprite="venus_front" alt=""><span>VENUS</span><small>Execute as missões e expulse os assassinos</small></div>
+        <div class="role-chip demom"><img data-sprite="demom_front" alt=""><span>DEMOM</span><small>Mate e sabote para vencer</small></div>
+        <div class="role-chip chefe"><img data-sprite="chefe_front" alt=""><span>CHEFE</span><small>Engula todos e sobreviva</small></div>
       </div>
+      <div class="opt-row"><label>Personagens na mansão: <b id="players-val">8</b></label><input id="players-range" type="range" min="4" max="16" value="8"></div>
       <button id="btn-play" class="big-btn">JOGAR</button>
-      <p class="hint">Teclado: setas ou WASD para andar · <b>E</b> para usar · No celular: joystick e botão USAR</p>
-      <p class="version">Fatia 1 — a mansão, o VENUS e as missões · criado por Lucca</p>
+      <p class="hint">Teclado: setas/WASD anda · <b>E</b> usa · <b>R</b> reporta · <b>Q</b> mata/engole · Celular: joystick e botões</p>
+      <p class="version">Fatia 2 (teste) — criado por Lucca</p>
     </div>
   </div>
+
+  <!-- Role reveal -->
+  <div id="reveal" class="overlay hidden">
+    <div id="reveal-card">
+      <p class="reveal-pre">Você é…</p>
+      <img id="reveal-img" alt="">
+      <h1 id="reveal-role">VENUS</h1>
+      <p id="reveal-goal"></p>
+      <p id="reveal-mates" class="hint"></p>
+    </div>
+  </div>
+
+  <!-- Meeting -->
+  <div id="meeting" class="overlay hidden">
+    <div id="meet-card">
+      <div id="meet-head"><span id="meet-title">Reunião</span><span id="meet-timer">25</span></div>
+      <div id="meet-body">
+        <div id="meet-players"></div>
+        <div id="meet-chat">
+          <div id="chat-log"></div>
+          <div id="chat-input-row">
+            <input id="chat-input" type="text" maxlength="120" placeholder="Digite o que quer dizer… (ex: eu vi o Azul na Cozinha)" autocomplete="off">
+            <button id="chat-send" class="small-btn">Falar</button>
+          </div>
+        </div>
+      </div>
+      <div id="meet-foot"><span id="meet-status">Discussão</span><button id="btn-skip" class="small-btn">Pular voto</button></div>
+    </div>
+  </div>
+
+  <!-- Eject result -->
+  <div id="eject" class="overlay hidden"><div id="eject-card"><img id="eject-img" alt=""><h2 id="eject-text"></h2></div></div>
 
   <!-- Pause / menu -->
   <div id="menu" class="overlay hidden">
     <div class="card">
       <h2>Pausa</h2>
       <button id="btn-resume" class="big-btn">Continuar</button>
-      <button id="btn-restart" class="big-btn secondary">Reiniciar</button>
+      <button id="btn-restart" class="big-btn secondary">Nova partida</button>
     </div>
   </div>
 
-  <!-- Win screen (fatia 1: todas as missões) -->
+  <!-- End screen -->
   <div id="win" class="overlay hidden">
-    <div class="card">
-      <h2>🎉 Todas as missões feitas!</h2>
-      <p>A mansão está segura… por enquanto. Na próxima fatia chegam o DEMOM e o CHEFE.</p>
+    <div class="card" id="win-card">
+      <h1 id="win-title">VENUS VENCERAM!</h1>
+      <p id="win-sub"></p>
+      <div id="win-roster"></div>
       <button id="btn-again" class="big-btn">Jogar de novo</button>
     </div>
   </div>

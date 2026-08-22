@@ -121,3 +121,75 @@ body.touch #touch-ui{display:block}
   #room-name{font-size:12px;padding:5px 10px}
   #mg-body{min-height:180px}
 }
+
+/* ===== Fatia 2 ===== */
+#hud-center{display:flex;flex-direction:column;align-items:center;gap:6px}
+#role-banner{font-weight:900;font-size:12px;letter-spacing:2px;padding:3px 12px;border-radius:999px;border:3px solid #000;background:#000;box-shadow:0 3px 0 #000}
+#role-banner.venus{color:var(--accent)}#role-banner.demom{color:#fff;background:var(--red)}#role-banner.chefe{color:#fff;background:var(--purple)}
+#ghost-note{position:absolute;left:50%;bottom:12%;transform:translateX(-50%);background:rgba(60,60,120,.85);border:3px solid #aab;border-radius:12px;padding:8px 14px;font-weight:900;font-size:14px}
+#cooldown{position:absolute;right:14px;bottom:30%;background:var(--panel);border:3px solid #000;border-radius:12px;padding:6px 12px;font-weight:900;box-shadow:0 4px 0 #000}
+body.touch #cooldown{bottom:auto;top:70px}
+.act-btn.kill{background:var(--red);color:#fff}
+.act-btn.report{background:#fff}
+.opt-row{display:flex;flex-direction:column;align-items:center;gap:6px;margin:8px 0}
+.opt-row input{width:min(80vw,320px);accent-color:var(--accent)}
+.role-chip small{display:block;font-size:9px;opacity:.8;font-weight:700;line-height:1.2;margin-top:3px}
+.role-chip{width:120px}
+/* reveal */
+#reveal{background:#000}
+#reveal-card{text-align:center;animation:pop .5s}
+.reveal-pre{font-size:22px;opacity:.8;margin:0}
+#reveal-img{height:180px;margin:10px 0;filter:drop-shadow(0 8px 0 #000)}
+#reveal-role{font-size:56px;margin:0;letter-spacing:4px;text-shadow:4px 4px 0 #000}
+#reveal-role.venus{color:var(--accent)}#reveal-role.demom{color:var(--red)}#reveal-role.chefe{color:#b98cff}
+#reveal-goal{font-size:18px;font-weight:900;margin:8px 0 0}
+/* meeting */
+#meet-card{background:#2a1a4a;border:4px solid #000;border-radius:22px;box-shadow:0 8px 0 #000;width:min(96vw,900px);max-height:96vh;display:flex;flex-direction:column;overflow:hidden}
+#meet-head{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:#1a1030;font-weight:900;font-size:18px}
+#meet-timer{background:var(--accent);color:#000;border-radius:999px;padding:2px 12px;border:3px solid #000}
+#meet-body{display:flex;gap:10px;padding:10px;flex:1;min-height:0}
+#meet-players{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;align-content:start;width:46%;overflow:auto}
+.mp{display:flex;align-items:center;gap:6px;background:#1a1030;border:3px solid #000;border-radius:12px;padding:4px 6px;cursor:pointer;position:relative;min-height:50px}
+.mp canvas{width:36px;height:36px}
+.mp .nm{font-weight:900;font-size:13px}
+.mp.dead{opacity:.4;cursor:default}
+.mp.dead .nm::after{content:" ☠";}
+.mp.me{outline:3px solid var(--accent)}
+.mp.voted{outline:3px solid #fff}
+.mp .votes{margin-left:auto;display:flex;gap:2px;flex-wrap:wrap;max-width:70px}
+.mp .votes i{display:block;width:12px;height:12px;border-radius:50%;border:2px solid #000}
+.mp .tag{position:absolute;right:4px;top:-8px;font-size:10px;background:#000;border-radius:6px;padding:1px 5px}
+.mp.votable:hover{background:#3a2a5a}
+#meet-chat{flex:1;display:flex;flex-direction:column;min-width:0}
+#chat-log{flex:1;overflow:auto;background:#1a1030;border:3px solid #000;border-radius:12px;padding:8px;min-height:160px;max-height:46vh}
+.bub{margin:4px 0;padding:6px 10px;border-radius:12px;background:#333;border:2px solid #000;font-size:13px;animation:bubin .25s}
+@keyframes bubin{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.bub b{margin-right:4px}
+.bub.sys{background:transparent;border:none;opacity:.8;font-style:italic;text-align:center}
+.bub.me{background:#3b2a60}
+#chat-input-row{display:flex;gap:6px;margin-top:6px}
+#chat-input{flex:1;border:3px solid #000;border-radius:10px;padding:8px;font-size:14px;font-family:inherit}
+.small-btn{border:3px solid #000;border-radius:10px;background:var(--accent);color:#000;font-weight:900;padding:6px 12px;cursor:pointer;box-shadow:0 3px 0 #000}
+.small-btn:disabled{opacity:.4}
+#meet-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;background:#1a1030;font-weight:900}
+/* eject */
+#eject{background:#000}
+#eject-card{text-align:center}
+#eject-img{height:140px;animation:spin 3s linear infinite}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+#eject-text{font-size:26px}
+/* win */
+#win-card{max-width:640px}
+#win-title{font-size:40px;margin:0 0 6px;text-shadow:3px 3px 0 #000}
+#win-title.venus{color:var(--accent)}#win-title.demom{color:var(--red)}#win-title.chefe{color:#b98cff}
+#win-roster{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0}
+#win-roster .mp{cursor:default;width:auto}
+/* bodies & names drawn on canvas; mobile tweaks */
+@media (max-width:700px){
+  #meet-body{flex-direction:column}
+  #meet-players{width:100%;grid-template-columns:repeat(3,1fr)}
+  .mp canvas{width:28px;height:28px}.mp .nm{font-size:11px}
+  #chat-log{min-height:100px;max-height:26vh}
+  #reveal-img{height:120px}#reveal-role{font-size:40px}
+  #role-banner{font-size:10px}
+}
