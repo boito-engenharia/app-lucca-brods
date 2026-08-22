@@ -66,10 +66,11 @@ function venusSprites(color) {
   const key = color.name;
   if (_spriteCache[key]) return _spriteCache[key];
   const S = {};
-  for (const k of ['front', 'back', 'side', 'run', 'dead']) { const im = SPRITES['venus_' + k]; S[k] = (color.hue === undefined) ? im : recolor(im, color.hue, color.sat, color.light); }
+  for (const k of ['front', 'back', 'side', 'run', 'dead', 'atk', 'jump']) { const im = SPRITES['venus_' + k]; S[k] = (color.hue === undefined) ? im : recolor(im, color.hue, color.sat, color.light); }
   _spriteCache[key] = S; return S;
 }
-function trueSprites(kind) { return { front: SPRITES[kind + '_front'], back: SPRITES[kind + '_back'], side: SPRITES[kind + '_side'], run: SPRITES[kind + '_run'], dead: SPRITES[kind + '_dead'] }; }
+function trueSprites(kind) { return { front: SPRITES[kind + '_front'], back: SPRITES[kind + '_back'], side: SPRITES[kind + '_side'], run: SPRITES[kind + '_run'], dead: SPRITES[kind + '_dead'], atk: SPRITES[kind + '_atk'], jump: SPRITES[kind + '_jump'] }; }
+const RUN_FACES_LEFT = { venus: false, demom: true, chefe: true };
 
 // ---------- Estado ----------
 const canvas = document.getElementById('game');
@@ -217,7 +218,7 @@ function update(dt) {
   for (const e of G.entities) { if (e.killCd > 0) e.killCd -= dt; if (e.revealT > 0) e.revealT -= dt; }
   // digestão
   for (const e of G.entities) if (e.swallowed && e.alive) { e.swallowT -= dt; if (e.swallowT <= 0) digest(e); }
-  sabUpdate(dt); specialsUpdate(dt); printsUpdate(dt);
+  sabUpdate(dt); specialsUpdate(dt); printsUpdate(dt); fxUpdate(dt);
   // bots
   for (const e of G.entities) if (e.isBot && alive(e)) aiUpdate(e, dt);
   aiNoticeBodies(dt);
@@ -271,7 +272,7 @@ function playerUse() {
   else if (n.type === 'special') { if (n.sp.id === 'eyes' && SP.eyesCd > 0) return; useSpecial(n.sp); }
   else if (n.type === 'power') openMinigame({ icon: '⚡', name: 'Religar a caixa de força', game: 'toggleAll', p: { n: 6 } }, () => endSabotage('💡 As luzes voltaram!'));
   else if (n.type === 'emergency') { if (SAB.active) { toast('O botão não funciona durante a sabotagem!'); return; } if (G.emergenciesLeft > 0 && G.meetingCd <= 0) { G.emergenciesLeft--; startMeeting({ type: 'emergency', reporter: me }); } else toast(G.meetingCd > 0 ? 'Espere um pouco para usar o botão' : 'Você já usou sua emergência'); }
-  else if (n.type === 'secret') { me.x = n.to.x; me.y = n.to.y; SFX.play('teleport'); G.secretUses = (G.secretUses || 0) + 1; me.jumpT = .5; }
+  else if (n.type === 'secret') { spawnFx(me.x, me.y - 20, '#ffffff', 12, 100, .6); me.x = n.to.x; me.y = n.to.y; spawnFx(me.x, me.y - 20, '#ffffff', 12, 100, .6); SFX.play('teleport'); G.secretUses = (G.secretUses || 0) + 1; me.jumpT = .5; }
 }
 function playerReport() { if (G.phase !== 'play' || G.paused || G.inMinigame) return; if (G.nearBody && alive(G.player)) startMeeting({ type: 'body', reporter: G.player, body: G.nearBody }); }
 function playerKill() { if (G.phase !== 'play' || G.paused || G.inMinigame) return; const me = G.player; if (!alive(me) || me.kind === 'venus' || me.killCd > 0 || !G.nearTarget) return; if (me.kind === 'demom') killEntity(me, G.nearTarget); else swallowEntity(me, G.nearTarget); }
@@ -287,9 +288,10 @@ function onKey(e) {
 // ---------- Regras: matar, engolir, digerir, soltar ----------
 function killEntity(killer, victim) {
   if (!alive(victim)) return;
-  killer.killCd = SETTINGS.killCooldown; killer.revealT = 1.1;
+  killer.killCd = SETTINGS.killCooldown; killer.revealT = 1.1; killer.atkDir = victim.x < killer.x ? 'left' : 'right';
   if (victim.shield) { victim.shield = false; SFX.play('bad'); if (victim === G.player) { toast('🧪 A Poção de Escudo te salvou!'); unlockMedal('shield'); } return; }
   recordDeath(victim, killer);
+  spawnFx(victim.x, victim.y - 20, '#ff1a1a', 16, 140, .8);
   victim.alive = false; victim.ghost = true; victim.moving = false;
   G.bodies.push({ x: victim.x, y: victim.y, ent: victim, t: G.t, room: roomAt(victim.x, victim.y) });
   SFX.play('kill');
@@ -300,10 +302,11 @@ function killEntity(killer, victim) {
 }
 function swallowEntity(chefe, victim) {
   if (!alive(victim)) return;
-  chefe.killCd = SETTINGS.swallowCooldown; chefe.revealT = 1.1;
+  chefe.killCd = SETTINGS.swallowCooldown; chefe.revealT = 1.1; chefe.atkDir = victim.x < chefe.x ? 'left' : 'right';
   if (victim.shield) { victim.shield = false; SFX.play('bad'); if (victim === G.player) { toast('🧪 A Poção de Escudo te salvou do CHEFE!'); unlockMedal('shield'); } return; }
   recordDeath(victim, chefe); G.swallowCount = (G.swallowCount || 0) + (chefe === G.player ? 1 : 0);
-  victim.swallowed = true; victim.swallowT = SETTINGS.digestTime; victim.moving = false;
+  victim.swallowed = true; victim.swallowT = SETTINGS.digestTime; victim.moving = false; victim.vanishT = .5; victim.vx0 = victim.x; victim.vy0 = victim.y; victim.eater = chefe;
+  spawnFx(victim.x, victim.y - 20, '#b98cff', 14, 120, .7);
   SFX.play('swallow');
   if (victim === G.player) { toast('O CHEFE engoliu você! Se ele for expulso ou morto em 60 s, você sai vivo…'); }
   aiOnKill(chefe, victim);
@@ -319,6 +322,12 @@ function releaseBelly(chefe) {
   for (const e of G.entities) if (e.swallowed && e.alive) { e.swallowed = false; e.x = chefe.x + (Math.random() - .5) * 60; e.y = chefe.y + (Math.random() - .5) * 40; if (!canStand(e.x, e.y, e.rad)) { e.x = chefe.x; e.y = chefe.y; } if (e === G.player) toast('Você foi libertado da barriga do CHEFE!'); }
 }
 function becomeGhost(msg) { hideHint(); SFX.play('ghost'); MUSIC.setMood('dark'); toast(msg); $('ghost-note').classList.remove('hidden'); $('prompt').classList.add('hidden'); G.player.speed = 260; }
+
+// ---------- Partículas de efeito ----------
+G.fx = [];
+function spawnFx(x, y, color, n, speed, life) { for (let i = 0; i < n; i++) { const a = Math.random() * 7, v = speed * (.4 + Math.random()); G.fx.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40, t: 0, life: life || .7, c: color, r: 3 + Math.random() * 4 }); } }
+function fxUpdate(dt) { for (const f of G.fx) { f.t += dt; f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 120 * dt; } G.fx = G.fx.filter(f => f.t < f.life); for (const e of G.entities) { if (e.vanishT > 0) e.vanishT -= dt; if (e.jumpT > 0) e.jumpT -= dt; } }
+function drawFx() { for (const f of G.fx) { const a = 1 - f.t / f.life; ctx.globalAlpha = a; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * a + 1, 0, 7); ctx.fill(); } ctx.globalAlpha = 1; }
 
 // ---------- Pegadas do DEMOM ----------
 function printsUpdate(dt) {
@@ -420,20 +429,29 @@ window.addEventListener('resize', resize); resize();
 
 function drawEntity(e) {
   const me = G.player;
-  if (e.swallowed) return;
+  if (e.swallowed) { if (e.vanishT > 0 && e.eater) { const k = 1 - e.vanishT / .5; const img = spritesFor(e, false).front; if (img) { const x = e.vx0 + (e.eater.x - e.vx0) * k, y = e.vy0 + (e.eater.y - e.vy0) * k, H = 64 * (1 - k * .9), W = img.width * (H / img.height); ctx.save(); ctx.translate(x, y); ctx.rotate(k * 6); ctx.drawImage(img, -W / 2, -H + 6, W, H); ctx.restore(); } } return; }
   if (!e.alive && !e.jailed) { if (e !== me && !me.ghost) return; }   // fantasmas só aparecem pra quem é fantasma
   const trueForm = (e === me && e.kind !== 'venus') || e.revealT > 0;
   const S = spritesFor(e, trueForm);
-  let img = S.front, flip = false;
-  if (e.facing === 'up') img = S.back; else if (e.facing === 'left') img = S.side; else if (e.facing === 'right') { img = S.side; flip = true; }
+  let img = S.front, flip = false, scale = 1;
+  const attacking = e.revealT > .6 && e.kind !== 'venus' && S.atk;
+  if (attacking) { img = S.atk; flip = e.atkDir === 'left'; scale = 1.12; }
+  else if (e.jumpT > 0 && S.jump) { img = S.jump; scale = 1.1; }
+  else if (e.facing === 'up') img = S.back;
+  else if (e.facing === 'left' || e.facing === 'right') {
+    const runFrame = e.moving && S.run && Math.floor(e.anim * .9) % 2 === 1;
+    if (runFrame) { img = S.run; const runLeft = RUN_FACES_LEFT[e.kind === 'venus' || !trueForm ? 'venus' : e.kind]; flip = (e.facing === 'left') !== runLeft; }
+    else { img = S.side; flip = e.facing === 'right'; }
+  }
   if (!img) return;
-  const H = 64, W = img.width * (H / img.height);
-  const bob = e.moving ? Math.abs(Math.sin(e.anim * 1.2)) * 5 : 0, tilt = e.moving ? Math.sin(e.anim * 1.2) * .08 : 0;
+  const H = 64 * scale, W = img.width * (H / img.height);
+  const bob = e.moving && !attacking ? Math.abs(Math.sin(e.anim * 1.2)) * 5 : 0, tilt = e.moving && !attacking ? Math.sin(e.anim * 1.2) * .08 : 0;
   ctx.save();
-  if (!e.alive && !e.jailed) { ctx.globalAlpha = .55; }
+  if (!e.alive && !e.jailed) { ctx.globalAlpha = .55; ctx.shadowColor = '#8ab4ff'; ctx.shadowBlur = 22; }
   else { ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 4, 18, 8, 0, 0, 7); ctx.fill(); }
   const floatY = (e.alive || e.jailed) ? 0 : Math.sin(G.t * 2 + e.id) * 6 - 14;
-  ctx.translate(e.x, e.y - bob + floatY); ctx.rotate(tilt); if (flip) ctx.scale(-1, 1);
+  const jumpY = e.jumpT > 0 ? Math.sin((e.jumpT / .5) * Math.PI) * 30 : 0;
+  ctx.translate(e.x, e.y - bob + floatY - jumpY); ctx.rotate(tilt); if (flip) ctx.scale(-1, 1);
   if (e.revealT > 0 && e.kind !== 'venus') { ctx.shadowColor = e.kind === 'demom' ? '#ff1a1a' : '#b98cff'; ctx.shadowBlur = 30; }
   ctx.drawImage(img, -W / 2, -H + 6, W, H);
   ctx.restore();
@@ -444,9 +462,10 @@ function drawEntity(e) {
 }
 function drawBody(b) {
   const S = spritesFor(b.ent, false); const img = S.dead; if (!img) return;
-  const W = 70, H = img.height * (W / img.width);
-  ctx.fillStyle = 'rgba(120,0,40,.55)'; ctx.beginPath(); ctx.ellipse(b.x, b.y + 6, 40, 16, 0, 0, 7); ctx.fill();
-  ctx.drawImage(img, b.x - W / 2, b.y - H + 10, W, H);
+  const age = G.t - b.t, k = Math.min(1, age / .35);
+  const W = 70 * (1.35 - .35 * k), H = img.height * (W / img.width);
+  ctx.fillStyle = `rgba(120,0,40,${.55 * k})`; ctx.beginPath(); ctx.ellipse(b.x, b.y + 6, 40 * k, 16 * k, 0, 0, 7); ctx.fill();
+  ctx.save(); ctx.translate(b.x, b.y + 10 - (1 - k) * 30); ctx.rotate((1 - k) * .6); ctx.drawImage(img, -W / 2, -H, W, H); ctx.restore();
 }
 function render() {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -455,6 +474,7 @@ function render() {
   for (const b of G.bodies) drawBody(b);
   const ents = G.entities.slice().sort((a, b) => a.y - b.y);
   for (const e of ents) drawEntity(e);
+  drawFx();
   drawParticles();
   drawLighting();
 }

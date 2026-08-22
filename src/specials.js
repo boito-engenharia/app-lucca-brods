@@ -110,7 +110,7 @@ function openAltar() {
 function revive(d) {
   SP.altarUsed = true; d.alive = true; d.ghost = false; d.digested = false; d.swallowed = false; d.x = 870; d.y = 1060; d.speed = d.isBot ? SETTINGS.botSpeed : SETTINGS.playerSpeed;
   if (d.isBot) { d.ai.state = 'idle'; d.ai.wait = 1; d.ai.witness = null; } else { $('ghost-note').classList.add('hidden'); toast('Você voltou à vida!'); }
-  G.bodies = G.bodies.filter(b => b.ent !== d);
+  G.bodies = G.bodies.filter(b => b.ent !== d); spawnFx(d.x, d.y - 30, '#ffd300', 24, 150, 1);
   SFX.play('bell'); toast(`✨ ${d.name} voltou à vida! O sino tocou na Capela…`); renderTaskList(); unlockMedal('reviver');
   // vilões ouvem o sino e vão até a Capela
   for (const e of G.entities) if (e.isBot && alive(e) && e.kind !== 'venus') { aiGoto(e, { x: 800, y: 1100 }); e.ai.state = 'goto'; }
