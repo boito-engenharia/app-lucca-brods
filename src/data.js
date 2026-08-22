@@ -213,6 +213,7 @@ const SETTINGS = {
   botSpeed: 165,
   playerSpeed: 190,
   emergencyPerPlayer: 1,
+  sabCooldown: 30,
   botTrust: .6,        // chance de um VENUS do computador acreditar numa acusação do jogador
   revealRole: true,
 };

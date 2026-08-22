@@ -44,6 +44,7 @@ function aiPickTaskTarget(e) {
 }
 function aiUpdate(e, dt) {
   const A = e.ai;
+  aiSabotageTick(e, dt);
   // vilões: caçar se der
   if (e.kind !== 'venus' && e.killCd <= 0 && A.state !== 'flee') {
     const victim = aiFindVictim(e);
@@ -66,8 +67,8 @@ function aiUpdate(e, dt) {
   if (A.state === 'goto' || A.state === 'flee') {
     if (aiFollow(e, dt)) {
       if (A.state === 'flee') { A.state = 'idle'; A.wait = .5; return; }
-      // chegou: faz a missão (ou finge)
-      A.state = 'task'; A.wait = 2.5 + Math.random() * 2.5; e.moving = false;
+      // chegou: faz a missão (ou finge); se veio consertar sabotagem, fica até resolver
+      A.state = 'task'; A.wait = A.sabTask ? 999 : 2.5 + Math.random() * 2.5; e.moving = false;
     }
     return;
   }

@@ -260,6 +260,21 @@ body.touch #touch-ui{display:block}
   #win-title{font-size:36px}
 }
 
+/* ===== sabotagem ===== */
+#sab-banner{position:absolute;left:50%;top:8%;transform:translateX(-50%);background:var(--red);color:#fff;border:3px solid #000;border-radius:12px;padding:8px 18px;font-size:15px;letter-spacing:1px;box-shadow:var(--shadow);text-transform:uppercase;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+#sab-banner.urgent{animation:blink .5s infinite}
+@keyframes blink{50%{background:#000}}
+body.touch #sab-banner{top:auto;bottom:2%;font-size:12px}
+.act-btn.sab{background:var(--purple);color:#fff;font-size:12px}
+.sab-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.sab-btn{background:var(--card);border:3px solid #000;border-radius:14px;padding:10px;color:var(--cream);text-align:left;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:4px;transition:transform .1s}
+.sab-btn:hover{transform:translateY(-2px)}
+.sab-btn:disabled{opacity:.4;cursor:default}
+.sab-btn .sab-ico{font-size:26px}
+.sab-btn b{font-size:14px;color:var(--yellow)}
+.sab-btn small{font-size:11px;color:var(--muted);font-weight:700;line-height:1.3}
+@media (max-width:600px){.sab-grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -286,11 +301,13 @@ body.touch #touch-ui{display:block}
     <div id="prompt" class="hidden"><span class="key">E</span> <span id="prompt-text">Usar</span></div>
     <div id="prompt2" class="hidden"><span class="key" id="prompt2-key">Q</span> <span id="prompt2-text">Matar</span></div>
     <div id="hint" class="hidden"></div>
+    <div id="sab-banner" class="hidden"></div>
     <div id="toast" class="hidden"></div>
     <div id="ghost-note" class="hidden">👻 Você virou fantasma — agora só observa (atravessa paredes).</div>
     <div id="touch-ui">
       <div id="joystick"><div id="joy-base"><div id="joy-knob"></div></div></div>
       <div id="touch-buttons">
+        <button id="btn-sab" class="act-btn sab hidden">SABOTAR</button>
         <button id="btn-kill" class="act-btn kill hidden">MATAR</button>
         <button id="btn-report" class="act-btn report">REPORTAR</button>
         <button id="btn-use" class="act-btn">USAR</button>
@@ -321,7 +338,7 @@ body.touch #touch-ui{display:block}
       <div class="opt-row"><label>Personagens na mansão: <b id="players-val">8</b></label><input id="players-range" type="range" min="4" max="16" value="8" aria-label="Número de personagens"><div id="crowd" aria-hidden="true"></div></div>
       <button id="btn-play" class="big-btn">JOGAR</button>
       <button id="btn-how" class="big-btn secondary">COMO JOGAR</button>
-      <p class="hint">Teclado: setas/WASD anda · <b>E</b> usa · <b>R</b> reporta · <b>Q</b> mata/engole · Celular: joystick e botões</p>
+      <p class="hint">Teclado: setas/WASD anda · <b>E</b> usa · <b>R</b> reporta · <b>Q</b> mata/engole · <b>F</b> sabota · Celular: joystick e botões</p>
       <p class="version">Criado por Lucca · versão de teste</p>
     </div>
   </div>
@@ -365,7 +382,7 @@ body.touch #touch-ui{display:block}
       <h2>Como jogar BRODS</h2>
       <div class="how-cols">
         <div class="how-box venus"><b>VENUS</b><p>Faça suas <b>missões</b> (estações amarelas: chegue perto e aperte <span class="key">E</span> / USAR). Se achar um <b>corpo</b>, aperte <span class="key">R</span> / REPORTAR. No Salão tem o <b>botão de emergência</b> (<span class="key">E</span>). Na reunião, conte o que viu e <b>vote</b> no suspeito. Vence fazendo todas as missões ou expulsando o DEMOM e o CHEFE.</p></div>
-        <div class="how-box demom"><b>DEMOM</b><p>Você parece um VENUS normal. Chegue perto de alguém <b>sozinho</b> e aperte <span class="key">Q</span> / MATAR. Depois espere o tempo de recarga. Fuja pelas <b>passagens secretas</b> (<span class="key">E</span>). Na reunião, <b>minta</b> e acuse outros. Vence quando sobrar pouco VENUS.</p></div>
+        <div class="how-box demom"><b>DEMOM</b><p>Você parece um VENUS normal. Chegue perto de alguém <b>sozinho</b> e aperte <span class="key">Q</span> / MATAR. Depois espere o tempo de recarga. Sabote com <span class="key">F</span> / SABOTAR (luzes, portas, fantasmas, missões). Fuja pelas <b>passagens secretas</b> (<span class="key">E</span>). Na reunião, <b>minta</b> e acuse outros. Vence quando sobrar pouco VENUS.</p></div>
         <div class="how-box chefe"><b>CHEFE</b><p>Você parece um VENUS normal. Chegue bem perto de alguém e aperte <span class="key">Q</span> / ENGOLIR. O engolido fica <b>60 s na sua barriga</b> — se você for expulso ou morto nesse tempo, ele escapa. Pode engolir até o DEMOM. Vence sendo o <b>último em pé</b>.</p></div>
       </div>
       <p class="hint">Andar: setas ou WASD (celular: joystick) · <span class="key">E</span> usar · <span class="key">R</span> reportar · <span class="key">Q</span> matar/engolir · <span class="key">Esc</span> pausa</p>
@@ -609,6 +626,7 @@ const SETTINGS = {
   botSpeed: 165,
   playerSpeed: 190,
   emergencyPerPlayer: 1,
+  sabCooldown: 30,
   botTrust: .6,        // chance de um VENUS do computador acreditar numa acusação do jogador
   revealRole: true,
 };
@@ -945,6 +963,11 @@ function drawMap() {
   for (const d of DECOR) { const r = roomAt(d.x + 1, d.y + 1); if (r && SPRITES['room_' + r.id]) continue; drawDecor(d); }
   // passagens secretas (só marcam o chão; uso vem na fatia 3)
   for (const s of SECRET) { for (const [x, y] of [[s.ax, s.ay], [s.bx, s.by]]) { ctx.fillStyle = '#1b1226'; rr(x - 22, y - 16, 44, 32, 6); ctx.fill(); ctx.strokeStyle = '#3b2a50'; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = '#3b2a50'; for (let i = -14; i <= 14; i += 7) ctx.fillRect(x + i - 1, y - 12, 2, 24); } }
+  // portas trancadas
+  for (const b of SAB.blocked) { ctx.fillStyle = '#3a2612'; ctx.fillRect(b.x, b.y, b.w, b.h); ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.strokeRect(b.x, b.y, b.w, b.h); ctx.fillStyle = '#c9a227'; if (b.w > b.h) for (let i = 0; i < b.w; i += 24) ctx.fillRect(b.x + i + 8, b.y + 4, 6, 8); else for (let i = 0; i < b.h; i += 24) ctx.fillRect(b.x + 4, b.y + i + 8, 8, 6); }
+  // alvos de sabotagem
+  if (SAB.active && SAB.active.type === 'lights') { const p = SAB.POWER; ctx.fillStyle = `rgba(255,211,0,${.3 + .3 * Math.sin(G.t * 6)})`; ctx.beginPath(); ctx.arc(p.x, p.y, 34, 0, 7); ctx.fill(); ctx.strokeStyle = '#ffd300'; ctx.lineWidth = 3; ctx.stroke(); }
+  if (SAB.active && SAB.active.type === 'ghosts') { const p = SAB.BELL; ctx.fillStyle = `rgba(255,60,60,${.3 + .3 * Math.sin(G.t * 8)})`; ctx.beginPath(); ctx.arc(p.x, p.y, 80, 0, 7); ctx.fill(); ctx.strokeStyle = '#ff1a1a'; ctx.lineWidth = 3; ctx.stroke(); ctx.font = '40px serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.fillText('🔔', p.x, p.y + 14); }
   // estações de missão
   for (const m of visibleStations()) {
     const done = m.done;
@@ -1026,16 +1049,17 @@ function drawLighting() {
   const lc = lightCanvas; if (lc.width !== canvas.width || lc.height !== canvas.height) { lc.width = canvas.width; lc.height = canvas.height; }
   const x = lc.getContext('2d');
   x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over';
-  x.fillStyle = G.dark ? 'rgba(4,0,14,.97)' : 'rgba(10,4,28,.55)'; x.fillRect(0, 0, lc.width, lc.height);
+  const darkMe = G.dark && G.player && G.player.kind !== 'demom' && G.player.alive;
+  x.fillStyle = darkMe ? 'rgba(4,0,14,.97)' : 'rgba(10,4,28,.55)'; x.fillRect(0, 0, lc.width, lc.height);
   const z = G.cam.zoom; x.setTransform(z, 0, 0, z, lc.width / 2 - G.cam.x * z, lc.height / 2 - G.cam.y * z);
   x.globalCompositeOperation = 'destination-out';
   const flick = .9 + Math.sin(G.t * 13) * .05 + Math.sin(G.t * 29) * .05;
   const spot = (lx, ly, r, a) => { const g = x.createRadialGradient(lx, ly, 0, lx, ly, r); g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(.5, `rgba(0,0,0,${a * .55})`); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.beginPath(); x.arc(lx, ly, r, 0, 7); x.fill(); };
-  if (!G.dark) for (const l of _lights) spot(l.x, l.y, l.r * (l.f ? flick : 1), .9);
+  if (!darkMe) for (const l of _lights) spot(l.x, l.y, l.r * (l.f ? flick : 1), .9);
   for (const m of visibleStations()) if (!m.done) spot(m.x, m.y, 90, .6);
-  for (const e of G.entities) { if (!e.alive && e !== G.player) continue; if (e.swallowed) continue; spot(e.x, e.y - 20, G.dark ? (e === G.player ? 150 : 60) : 230, 1); }
+  for (const e of G.entities) { if (!e.alive && e !== G.player) continue; if (e.swallowed) continue; spot(e.x, e.y - 20, darkMe ? (e === G.player ? 150 : 60) : 230, 1); }
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(lc, 0, 0); ctx.restore();
-  if (!G.dark) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (const l of _lights) { const g = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.r * .6); g.addColorStop(0, `rgba(${l.c},${.22 * (l.f ? flick : 1)})`); g.addColorStop(1, `rgba(${l.c},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(l.x, l.y, l.r * .6, 0, 7); ctx.fill(); } ctx.restore(); }
+  if (!darkMe) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (const l of _lights) { const g = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.r * .6); g.addColorStop(0, `rgba(${l.c},${.22 * (l.f ? flick : 1)})`); g.addColorStop(1, `rgba(${l.c},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(l.x, l.y, l.r * .6, 0, 7); ctx.fill(); } ctx.restore(); }
 }
 
 // ---------- Partículas: poeira, morcegos, névoa ----------
@@ -1091,6 +1115,7 @@ const SFX = (() => {
     door: () => { if (!enabled || !ctx) return; const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.setValueAtTime(160 + Math.random() * 60, ctx.currentTime); o.frequency.linearRampToValueAtTime(110, ctx.currentTime + .4); f.type = 'lowpass'; f.frequency.value = 900; g.gain.setValueAtTime(.04, ctx.currentTime); g.gain.linearRampToValueAtTime(.0001, ctx.currentTime + .45); o.connect(f); f.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + .5); },
     bell: () => { [880, 1320, 1760].forEach((f, i) => tone(f, 1.2 - i * .2, 'sine', .06 / (i + 1))); },
     ghost: () => { tone(520, .8, 'sine', .05, -300); },
+    lights: () => { noise(.3, .12); tone(200, .5, 'square', .05, -150); },
   };
   return { unlock: ensure, tone, play: (n) => { ensure(); if (lib[n]) lib[n](); }, toggle: () => { enabled = !enabled; MUSIC.setEnabled(enabled); return enabled; }, get enabled() { return enabled; } };
 })();
@@ -1170,11 +1195,12 @@ const joy = { active: false, id: null, cx: 0, cy: 0, dx: 0, dy: 0 };
 $('btn-use').addEventListener('click', () => { SFX.unlock(); playerUse(); });
 $('btn-report').addEventListener('click', () => { SFX.unlock(); playerReport(); });
 $('btn-kill').addEventListener('click', () => { SFX.unlock(); playerKill(); });
+$('btn-sab').addEventListener('click', () => { SFX.unlock(); openSabMenu(); });
 
 // ---------- Geometria ----------
 function buildWalk() { G.walk = [...ROOMS.map(r => ({ x: r.x, y: r.y, w: r.w, h: r.h, id: r.id })), ...CORRIDORS.map((c, i) => ({ ...c, id: 'c' + i }))]; }
 function inWalk(x, y) { for (const r of G.walk) if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return true; return false; }
-function canStand(x, y, rad) { for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) if (!inWalk(x + Math.cos(a) * rad, y + Math.sin(a) * rad)) return false; return true; }
+function canStand(x, y, rad) { for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) { const px = x + Math.cos(a) * rad, py = y + Math.sin(a) * rad; if (!inWalk(px, py) || inBlocked(px, py)) return false; } return true; }
 function roomAt(x, y) { for (const r of ROOMS) if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return r; return null; }
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 function moveEntity(e, ax, ay, dt) {
@@ -1216,7 +1242,7 @@ function newGame() {
   for (const e of ents) { e.tasks = pickTasks(SETTINGS.tasksPerVenus).map(t => ({ id: t.id, done: false })); if (e.kind !== 'venus') e.killCd = 12; }
   // posições iniciais em círculo no Salão
   ents.forEach((e, i) => { const a = (i / ents.length) * Math.PI * 2; e.x = 1020 + Math.cos(a) * 120; e.y = 620 + Math.sin(a) * 90; });
-  G.entities = ents; G.player = me; G.bodies = []; G.result = null;
+  G.entities = ents; G.player = me; G.bodies = []; G.result = null; SAB.active = null; SAB.blocked = []; $('sab-banner').classList.add('hidden');
   G.emergenciesLeft = SETTINGS.emergencyPerPlayer; G.meetingCd = 10;
   G.t = 0; G.last = performance.now(); G.paused = false; G.inMinigame = false; G.dark = false; G.room = null;
   G.cam.x = me.x; G.cam.y = me.y;
@@ -1234,7 +1260,7 @@ function newGame() {
   $('reveal').classList.remove('hidden'); SFX.play(myRole === 'venus' ? 'ok' : 'kill');
   setTimeout(() => { $('reveal').classList.add('hidden'); G.phase = 'play'; $('hud').classList.remove('hidden'); setupHud(); G.hintT = 40; MUSIC.setMood(roleMood()); showHint(myRole === 'venus' ? 'Siga as estações amarelas e aperte E pra fazer a missão. Viu um corpo? Aperte R.' : myRole === 'demom' ? 'Você parece um VENUS. Chegue perto de alguém sozinho e aperte Q pra MATAR (recarga: 12 s).' : 'Você parece um VENUS. Chegue bem perto de alguém e aperte Q pra ENGOLIR (recarga: 12 s).'); }, 5200);
 }
-function roleMood() { const me = G.player; if (!me) return 'menu'; if (!me.alive) return 'dark'; if (G.dark) return 'tense'; return me.kind === 'venus' ? 'calm' : 'villain'; }
+function roleMood() { const me = G.player; if (!me) return 'menu'; if (!me.alive) return 'dark'; if (SAB.active && (SAB.active.type === 'lights' || SAB.active.type === 'ghosts') && me.kind !== 'demom') return 'tense'; return me.kind === 'venus' ? 'calm' : 'villain'; }
 function pickTasks(n) {
   const pool = TASKS.slice(); const out = []; const usedRooms = new Set();
   while (out.length < n && pool.length) {
@@ -1247,6 +1273,7 @@ function setupHud() {
   const me = G.player, info = ROLE_INFO[me.kind];
   $('role-banner').textContent = info.title; $('role-banner').className = info.cls;
   $('btn-kill').classList.toggle('hidden', me.kind === 'venus'); $('btn-kill').textContent = me.kind === 'chefe' ? 'ENGOLIR' : 'MATAR';
+  $('btn-sab').classList.toggle('hidden', me.kind !== 'demom');
   $('cd-label').textContent = me.kind === 'chefe' ? 'ENGOLIR' : 'MATAR';
   renderTaskList();
 }
@@ -1274,6 +1301,7 @@ function update(dt) {
   for (const e of G.entities) { if (e.killCd > 0) e.killCd -= dt; if (e.revealT > 0) e.revealT -= dt; }
   // digestão
   for (const e of G.entities) if (e.swallowed && e.alive) { e.swallowT -= dt; if (e.swallowT <= 0) digest(e); }
+  sabUpdate(dt);
   // bots
   for (const e of G.entities) if (e.isBot && alive(e)) aiUpdate(e, dt);
   aiNoticeBodies(dt);
@@ -1288,7 +1316,8 @@ function updatePlayerNear() {
     // estação de missão própria
     let best = 70;
     for (const t of me.tasks) { if (t.done) continue; const p = taskPos(TASK_BY_ID[t.id]); const d = Math.hypot(p.x - me.x, p.y - me.y); if (d < best) { best = d; near = { type: 'task', task: t, def: TASK_BY_ID[t.id], name: TASK_BY_ID[t.id].name }; } }
-    if (!near && Math.hypot(EMERGENCY.x - me.x, EMERGENCY.y - me.y) < 60) near = { type: 'emergency', name: G.emergenciesLeft > 0 ? 'Botão de emergência' : 'Sem emergências' };
+    if (!near && SAB.active && SAB.active.type === 'lights' && me.kind !== 'demom' && Math.hypot(SAB.POWER.x - me.x, SAB.POWER.y - me.y) < 70) near = { type: 'power', name: 'Religar as luzes' };
+    if (!near && Math.hypot(EMERGENCY.x - me.x, EMERGENCY.y - me.y) < 60) near = { type: 'emergency', name: SAB.active ? 'Botão travado (sabotagem)' : G.emergenciesLeft > 0 ? 'Botão de emergência' : 'Sem emergências' };
     if (!near && me.kind !== 'venus') for (const s of SECRET) { if (Math.hypot(s.ax - me.x, s.ay - me.y) < 50) near = { type: 'secret', to: { x: s.bx, y: s.by }, name: 'Passagem secreta' }; if (Math.hypot(s.bx - me.x, s.by - me.y) < 50) near = { type: 'secret', to: { x: s.ax, y: s.ay }, name: 'Passagem secreta' }; }
     // corpo
     G.nearBody = null; for (const b of G.bodies) if (Math.hypot(b.x - me.x, b.y - me.y) < 90) G.nearBody = b;
@@ -1301,6 +1330,7 @@ function updatePlayerNear() {
   $('btn-use').classList.toggle('ready', !!near);
   $('btn-report').classList.toggle('ready', !!G.nearBody);
   $('btn-kill').classList.toggle('ready', !!G.nearTarget && me.killCd <= 0);
+  $('btn-sab').classList.toggle('ready', canSabotage(me));
   // aviso de ação secundária (Q / R)
   const p2 = $('prompt2'); let p2k = null, p2t = '';
   if (G.nearBody) { p2k = 'R'; p2t = 'REPORTAR o corpo'; p2.classList.add('report'); }
@@ -1321,7 +1351,8 @@ function playerUse() {
   if (G.phase !== 'play' || G.paused || G.inMinigame) return;
   const me = G.player, n = G.near; if (!n || !alive(me)) return;
   if (n.type === 'task') openMinigame(n.def, () => completeTask(me, n.task));
-  else if (n.type === 'emergency') { if (G.emergenciesLeft > 0 && G.meetingCd <= 0) { G.emergenciesLeft--; startMeeting({ type: 'emergency', reporter: me }); } else toast(G.meetingCd > 0 ? 'Espere um pouco para usar o botão' : 'Você já usou sua emergência'); }
+  else if (n.type === 'power') openMinigame({ icon: '⚡', name: 'Religar a caixa de força', game: 'toggleAll', p: { n: 6 } }, () => endSabotage('💡 As luzes voltaram!'));
+  else if (n.type === 'emergency') { if (SAB.active) { toast('O botão não funciona durante a sabotagem!'); return; } if (G.emergenciesLeft > 0 && G.meetingCd <= 0) { G.emergenciesLeft--; startMeeting({ type: 'emergency', reporter: me }); } else toast(G.meetingCd > 0 ? 'Espere um pouco para usar o botão' : 'Você já usou sua emergência'); }
   else if (n.type === 'secret') { me.x = n.to.x; me.y = n.to.y; SFX.play('teleport'); }
 }
 function playerReport() { if (G.phase !== 'play' || G.paused || G.inMinigame) return; if (G.nearBody && alive(G.player)) startMeeting({ type: 'body', reporter: G.player, body: G.nearBody }); }
@@ -1331,6 +1362,7 @@ function onKey(e) {
   if (k === 'e' || k === 'enter') { if (G.phase === 'play' && !G.inMinigame) playerUse(); }
   if (k === 'r') playerReport();
   if (k === 'q') playerKill();
+  if (k === 'f') openSabMenu();
   if (k === 'escape') { if (G.inMinigame) closeMinigame(); else if (G.phase === 'play') togglePause(); }
 }
 
@@ -1553,6 +1585,7 @@ function aiPickTaskTarget(e) {
 }
 function aiUpdate(e, dt) {
   const A = e.ai;
+  aiSabotageTick(e, dt);
   // vilões: caçar se der
   if (e.kind !== 'venus' && e.killCd <= 0 && A.state !== 'flee') {
     const victim = aiFindVictim(e);
@@ -1575,8 +1608,8 @@ function aiUpdate(e, dt) {
   if (A.state === 'goto' || A.state === 'flee') {
     if (aiFollow(e, dt)) {
       if (A.state === 'flee') { A.state = 'idle'; A.wait = .5; return; }
-      // chegou: faz a missão (ou finge)
-      A.state = 'task'; A.wait = 2.5 + Math.random() * 2.5; e.moving = false;
+      // chegou: faz a missão (ou finge); se veio consertar sabotagem, fica até resolver
+      A.state = 'task'; A.wait = A.sabTask ? 999 : 2.5 + Math.random() * 2.5; e.moving = false;
     }
     return;
   }
@@ -1629,6 +1662,137 @@ function aiNoticeBodies(dt) {
   }
 }
 
+// ===== BRODS — sabotagens do DEMOM =====
+'use strict';
+
+const SAB = {
+  POWER: { x: 420, y: 1000 },     // caixa de força (Porão)
+  BELL: { x: 940, y: 1220 },      // sino (Capela)
+  active: null,                   // {type, t, room?, fixers:Set}
+  blocked: [],                    // retângulos bloqueados (portas trancadas)
+};
+const SAB_INFO = {
+  lights: { name: 'Apagar as luzes', icon: '💡', desc: 'A mansão escurece; os VENUS só veem com a lanterna. Conserto na caixa de força do Porão.' },
+  doors:  { name: 'Trancar portas', icon: '🚪', desc: 'Tranca as portas de um cômodo por 10 s.' },
+  ghosts: { name: 'Soltar os fantasmas', icon: '👻', desc: 'Alarme! Dois VENUS precisam tocar o sino da Capela em 30 s, ou o DEMOM vence.' },
+  mess:   { name: 'Bagunçar missão', icon: '💥', desc: 'Desfaz uma missão já concluída por um VENUS.' },
+};
+
+function canSabotage(e) { return G.phase === 'play' && alive(e) && e.kind === 'demom' && !SAB.active && (e.sabCd || 0) <= 0; }
+
+function doSabotage(by, type, roomId) {
+  if (!canSabotage(by)) return false;
+  by.sabCd = SETTINGS.sabCooldown;
+  if (type === 'lights') {
+    SAB.active = { type, t: 999, fixers: new Set() }; G.dark = true; SFX.play('lights');
+    if (G.player.kind !== 'demom') { MUSIC.setMood('tense'); toast('💡 As luzes apagaram! Religue na caixa de força do Porão.'); } else toast('💡 Luzes apagadas!');
+    aiOnSabotage(type);
+  } else if (type === 'doors') {
+    const r = ROOM_BY_ID[roomId] || ROOMS[Math.floor(Math.random() * ROOMS.length)];
+    SAB.active = { type, t: 10, room: r };
+    // bloqueia a faixa de contato entre o cômodo e cada corredor vizinho
+    SAB.blocked = [];
+    for (const c of CORRIDORS) {
+      const x0 = Math.max(r.x, c.x), x1 = Math.min(r.x + r.w, c.x + c.w), y0 = Math.max(r.y, c.y), y1 = Math.min(r.y + r.h, c.y + c.h);
+      if (x1 >= x0 && y1 >= y0) {
+        if (x1 - x0 > y1 - y0) SAB.blocked.push({ x: x0, y: y0 - 8, w: x1 - x0, h: 16 }); else SAB.blocked.push({ x: x0 - 8, y: y0, w: 16, h: y1 - y0 });
+      }
+    }
+    SFX.play('door'); toast(`🚪 As portas ${prep(r)} ${r.name} se trancaram!`);
+  } else if (type === 'ghosts') {
+    SAB.active = { type, t: 30, bell: new Set() }; SFX.play('alarm');
+    if (G.player.kind !== 'demom') MUSIC.setMood('tense');
+    toast('👻 OS FANTASMAS FORAM SOLTOS! Dois VENUS precisam tocar o sino da Capela!');
+    aiOnSabotage(type);
+  } else if (type === 'mess') {
+    const cands = G.entities.filter(e => e.kind === 'venus' && e.alive && e.tasks.some(t => t.done));
+    if (!cands.length) { by.sabCd = 5; return false; }
+    const v = cands[Math.floor(Math.random() * cands.length)]; const done = v.tasks.filter(t => t.done); const t = done[Math.floor(Math.random() * done.length)];
+    t.done = false; SFX.play('bad'); renderTaskList();
+    toast(v === G.player ? `💥 Alguém bagunçou sua missão: ${TASK_BY_ID[t.id].name}!` : `💥 Uma missão do ${v.name} foi bagunçada!`);
+  }
+  updateSabBanner();
+  return true;
+}
+
+function inBlocked(x, y) { for (const b of SAB.blocked) if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return true; return false; }
+
+function sabUpdate(dt) {
+  for (const e of G.entities) if (e.sabCd > 0) e.sabCd -= dt;
+  const s = SAB.active; if (!s) return;
+  if (s.type === 'doors') { s.t -= dt; if (s.t <= 0) endSabotage('As portas se abriram.'); }
+  else if (s.type === 'ghosts') {
+    s.t -= dt;
+    const near = G.entities.filter(e => alive(e) && e.kind === 'venus' && Math.hypot(e.x - SAB.BELL.x, e.y - SAB.BELL.y) < 90);
+    if (near.length >= 2) { SFX.play('bell'); endSabotage('🔔 O sino tocou! Os fantasmas voltaram pro sótão.'); }
+    else if (s.t <= 0) { endSabotage(''); endGame('demom'); }
+  }
+  else if (s.type === 'lights') {
+    // conserto: um VENUS (bot) parado na caixa de força por 4 s; o jogador usa o minijogo
+    for (const e of G.entities) {
+      if (!e.isBot || !alive(e) || e.kind !== 'venus') continue;
+      if (Math.hypot(e.x - SAB.POWER.x, e.y - SAB.POWER.y) < 60) { e.fixT = (e.fixT || 0) + dt; if (e.fixT > 4) { endSabotage('💡 As luzes voltaram!'); return; } }
+      else e.fixT = 0;
+    }
+  }
+  updateSabBanner();
+}
+function endSabotage(msg) {
+  const s = SAB.active; SAB.active = null; SAB.blocked = [];
+  if (s && s.type === 'lights') { G.dark = false; }
+  if (msg) toast(msg);
+  if (G.phase === 'play') MUSIC.setMood(roleMood());
+  for (const e of G.entities) { if (e.isBot && e.ai.sabTask) { e.ai.sabTask = null; e.ai.state = 'idle'; e.ai.wait = .5; } }
+  updateSabBanner();
+}
+function updateSabBanner() {
+  const b = $('sab-banner'); const s = SAB.active;
+  if (!s) { b.classList.add('hidden'); return; }
+  b.classList.remove('hidden');
+  if (s.type === 'lights') b.textContent = '💡 LUZES APAGADAS — religue na caixa de força do Porão';
+  else if (s.type === 'doors') b.textContent = `🚪 Portas trancadas ${prep(s.room)} ${s.room.name} — ${Math.ceil(s.t)}s`;
+  else if (s.type === 'ghosts') { const near = G.entities.filter(e => alive(e) && e.kind === 'venus' && Math.hypot(e.x - SAB.BELL.x, e.y - SAB.BELL.y) < 90).length; b.textContent = `👻 FANTASMAS SOLTOS — ${Math.ceil(s.t)}s — ${near}/2 VENUS no sino da Capela`; }
+  b.classList.toggle('urgent', s.type === 'ghosts' && s.t < 10);
+}
+
+// ---------- Menu de sabotagem (jogador DEMOM) ----------
+function openSabMenu() {
+  const me = G.player; if (G.phase !== 'play' || G.inMinigame || me.kind !== 'demom' || !alive(me)) return;
+  G.inMinigame = true; SFX.play('open');
+  const body = $('mg-body'); body.innerHTML = ''; body._cleanup = null; $('mg-title').textContent = '😈 Sabotagem';
+  if (!canSabotage(me)) body.appendChild(el('p', 'mg-instr', SAB.active ? 'Já tem uma sabotagem acontecendo.' : `Recarregando… ${Math.ceil(me.sabCd)} s`));
+  const row = el('div', 'sab-grid'); body.appendChild(row);
+  for (const [k, info] of Object.entries(SAB_INFO)) {
+    const b = el('button', 'sab-btn', `<span class="sab-ico">${info.icon}</span><b>${info.name}</b><small>${info.desc}</small>`);
+    b.disabled = !canSabotage(me);
+    b.onclick = () => {
+      if (k === 'doors') { body.innerHTML = ''; body.appendChild(el('p', 'mg-instr', 'Trancar as portas de qual cômodo?')); const g = el('div', 'mg-row'); body.appendChild(g); for (const r of ROOMS) { const rb = el('button', 'small-btn', r.name); rb.onclick = () => { doSabotage(me, 'doors', r.id); closeMinigame(); }; g.appendChild(rb); } return; }
+      doSabotage(me, k); closeMinigame();
+    };
+    row.appendChild(b);
+  }
+  $('minigame').classList.remove('hidden');
+}
+
+// ---------- Bots ----------
+function aiSabotageTick(e, dt) {
+  if (e.kind !== 'demom' || !e.isBot || !alive(e)) return;
+  if (e.sabCd === undefined) e.sabCd = 35 + Math.random() * 20;
+  if (!canSabotage(e)) return;
+  if (Math.random() > dt * .12) return;     // em média a cada ~8 s quando pronto
+  const V = countAlive('venus'); const r = Math.random();
+  if (r < .5) doSabotage(e, 'lights');
+  else if (r < .7) { const rooms = ROOMS.filter(rm => G.entities.some(v => alive(v) && v.kind === 'venus' && roomAt(v.x, v.y) === rm)); const rm = rooms[Math.floor(Math.random() * rooms.length)]; doSabotage(e, 'doors', rm && rm.id); }
+  else if (r < .9 || V < 3) doSabotage(e, 'mess');
+  else doSabotage(e, 'ghosts');
+}
+function aiOnSabotage(type) {
+  // VENUS bots reagem: luzes → 2 mais próximos vão à caixa de força; fantasmas → 3 mais próximos vão ao sino
+  const target = type === 'lights' ? SAB.POWER : SAB.BELL; const n = type === 'lights' ? 2 : 3;
+  const bots = G.entities.filter(e => e.isBot && alive(e) && e.kind === 'venus').sort((a, b) => Math.hypot(a.x - target.x, a.y - target.y) - Math.hypot(b.x - target.x, b.y - target.y)).slice(0, n);
+  for (const b of bots) { b.ai.sabTask = type; aiGoto(b, { x: target.x + (Math.random() - .5) * 40, y: target.y + (Math.random() - .5) * 30 }); b.ai.state = 'goto'; }
+}
+
 // ===== BRODS — reunião, conversa e votação =====
 'use strict';
 
@@ -1637,7 +1801,7 @@ const M = { active: false, phase: 'talk', timer: 0, votes: new Map(), info: null
 function startMeeting(info) {
   if (G.phase !== 'play' || M.active) return;
   M.active = true; M.info = info; M.votes = new Map(); M.suspicion = new Map(); M.accusations = []; M.playerVoted = false; M.talkTimers = [];
-  closeMinigame(); hideHint(); $('prompt2').classList.add('hidden'); G.phase = 'meeting'; SFX.play('alarm'); MUSIC.setMood('meeting');
+  closeMinigame(); hideHint(); if (SAB.active) endSabotage(''); $('prompt2').classList.add('hidden'); G.phase = 'meeting'; SFX.play('alarm'); MUSIC.setMood('meeting');
   // onde cada um estava
   for (const e of G.entities) { const r = roomAt(e.x, e.y); e.roomAtMeeting = r ? r.id : null; }
   // teleporta os vivos para o Salão

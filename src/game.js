@@ -31,6 +31,7 @@ const SFX = (() => {
     door: () => { if (!enabled || !ctx) return; const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.setValueAtTime(160 + Math.random() * 60, ctx.currentTime); o.frequency.linearRampToValueAtTime(110, ctx.currentTime + .4); f.type = 'lowpass'; f.frequency.value = 900; g.gain.setValueAtTime(.04, ctx.currentTime); g.gain.linearRampToValueAtTime(.0001, ctx.currentTime + .45); o.connect(f); f.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + .5); },
     bell: () => { [880, 1320, 1760].forEach((f, i) => tone(f, 1.2 - i * .2, 'sine', .06 / (i + 1))); },
     ghost: () => { tone(520, .8, 'sine', .05, -300); },
+    lights: () => { noise(.3, .12); tone(200, .5, 'square', .05, -150); },
   };
   return { unlock: ensure, tone, play: (n) => { ensure(); if (lib[n]) lib[n](); }, toggle: () => { enabled = !enabled; MUSIC.setEnabled(enabled); return enabled; }, get enabled() { return enabled; } };
 })();
@@ -110,11 +111,12 @@ const joy = { active: false, id: null, cx: 0, cy: 0, dx: 0, dy: 0 };
 $('btn-use').addEventListener('click', () => { SFX.unlock(); playerUse(); });
 $('btn-report').addEventListener('click', () => { SFX.unlock(); playerReport(); });
 $('btn-kill').addEventListener('click', () => { SFX.unlock(); playerKill(); });
+$('btn-sab').addEventListener('click', () => { SFX.unlock(); openSabMenu(); });
 
 // ---------- Geometria ----------
 function buildWalk() { G.walk = [...ROOMS.map(r => ({ x: r.x, y: r.y, w: r.w, h: r.h, id: r.id })), ...CORRIDORS.map((c, i) => ({ ...c, id: 'c' + i }))]; }
 function inWalk(x, y) { for (const r of G.walk) if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return true; return false; }
-function canStand(x, y, rad) { for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) if (!inWalk(x + Math.cos(a) * rad, y + Math.sin(a) * rad)) return false; return true; }
+function canStand(x, y, rad) { for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) { const px = x + Math.cos(a) * rad, py = y + Math.sin(a) * rad; if (!inWalk(px, py) || inBlocked(px, py)) return false; } return true; }
 function roomAt(x, y) { for (const r of ROOMS) if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return r; return null; }
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 function moveEntity(e, ax, ay, dt) {
@@ -156,7 +158,7 @@ function newGame() {
   for (const e of ents) { e.tasks = pickTasks(SETTINGS.tasksPerVenus).map(t => ({ id: t.id, done: false })); if (e.kind !== 'venus') e.killCd = 12; }
   // posições iniciais em círculo no Salão
   ents.forEach((e, i) => { const a = (i / ents.length) * Math.PI * 2; e.x = 1020 + Math.cos(a) * 120; e.y = 620 + Math.sin(a) * 90; });
-  G.entities = ents; G.player = me; G.bodies = []; G.result = null;
+  G.entities = ents; G.player = me; G.bodies = []; G.result = null; SAB.active = null; SAB.blocked = []; $('sab-banner').classList.add('hidden');
   G.emergenciesLeft = SETTINGS.emergencyPerPlayer; G.meetingCd = 10;
   G.t = 0; G.last = performance.now(); G.paused = false; G.inMinigame = false; G.dark = false; G.room = null;
   G.cam.x = me.x; G.cam.y = me.y;
@@ -174,7 +176,7 @@ function newGame() {
   $('reveal').classList.remove('hidden'); SFX.play(myRole === 'venus' ? 'ok' : 'kill');
   setTimeout(() => { $('reveal').classList.add('hidden'); G.phase = 'play'; $('hud').classList.remove('hidden'); setupHud(); G.hintT = 40; MUSIC.setMood(roleMood()); showHint(myRole === 'venus' ? 'Siga as estações amarelas e aperte E pra fazer a missão. Viu um corpo? Aperte R.' : myRole === 'demom' ? 'Você parece um VENUS. Chegue perto de alguém sozinho e aperte Q pra MATAR (recarga: 12 s).' : 'Você parece um VENUS. Chegue bem perto de alguém e aperte Q pra ENGOLIR (recarga: 12 s).'); }, 5200);
 }
-function roleMood() { const me = G.player; if (!me) return 'menu'; if (!me.alive) return 'dark'; if (G.dark) return 'tense'; return me.kind === 'venus' ? 'calm' : 'villain'; }
+function roleMood() { const me = G.player; if (!me) return 'menu'; if (!me.alive) return 'dark'; if (SAB.active && (SAB.active.type === 'lights' || SAB.active.type === 'ghosts') && me.kind !== 'demom') return 'tense'; return me.kind === 'venus' ? 'calm' : 'villain'; }
 function pickTasks(n) {
   const pool = TASKS.slice(); const out = []; const usedRooms = new Set();
   while (out.length < n && pool.length) {
@@ -187,6 +189,7 @@ function setupHud() {
   const me = G.player, info = ROLE_INFO[me.kind];
   $('role-banner').textContent = info.title; $('role-banner').className = info.cls;
   $('btn-kill').classList.toggle('hidden', me.kind === 'venus'); $('btn-kill').textContent = me.kind === 'chefe' ? 'ENGOLIR' : 'MATAR';
+  $('btn-sab').classList.toggle('hidden', me.kind !== 'demom');
   $('cd-label').textContent = me.kind === 'chefe' ? 'ENGOLIR' : 'MATAR';
   renderTaskList();
 }
@@ -214,6 +217,7 @@ function update(dt) {
   for (const e of G.entities) { if (e.killCd > 0) e.killCd -= dt; if (e.revealT > 0) e.revealT -= dt; }
   // digestão
   for (const e of G.entities) if (e.swallowed && e.alive) { e.swallowT -= dt; if (e.swallowT <= 0) digest(e); }
+  sabUpdate(dt);
   // bots
   for (const e of G.entities) if (e.isBot && alive(e)) aiUpdate(e, dt);
   aiNoticeBodies(dt);
@@ -228,7 +232,8 @@ function updatePlayerNear() {
     // estação de missão própria
     let best = 70;
     for (const t of me.tasks) { if (t.done) continue; const p = taskPos(TASK_BY_ID[t.id]); const d = Math.hypot(p.x - me.x, p.y - me.y); if (d < best) { best = d; near = { type: 'task', task: t, def: TASK_BY_ID[t.id], name: TASK_BY_ID[t.id].name }; } }
-    if (!near && Math.hypot(EMERGENCY.x - me.x, EMERGENCY.y - me.y) < 60) near = { type: 'emergency', name: G.emergenciesLeft > 0 ? 'Botão de emergência' : 'Sem emergências' };
+    if (!near && SAB.active && SAB.active.type === 'lights' && me.kind !== 'demom' && Math.hypot(SAB.POWER.x - me.x, SAB.POWER.y - me.y) < 70) near = { type: 'power', name: 'Religar as luzes' };
+    if (!near && Math.hypot(EMERGENCY.x - me.x, EMERGENCY.y - me.y) < 60) near = { type: 'emergency', name: SAB.active ? 'Botão travado (sabotagem)' : G.emergenciesLeft > 0 ? 'Botão de emergência' : 'Sem emergências' };
     if (!near && me.kind !== 'venus') for (const s of SECRET) { if (Math.hypot(s.ax - me.x, s.ay - me.y) < 50) near = { type: 'secret', to: { x: s.bx, y: s.by }, name: 'Passagem secreta' }; if (Math.hypot(s.bx - me.x, s.by - me.y) < 50) near = { type: 'secret', to: { x: s.ax, y: s.ay }, name: 'Passagem secreta' }; }
     // corpo
     G.nearBody = null; for (const b of G.bodies) if (Math.hypot(b.x - me.x, b.y - me.y) < 90) G.nearBody = b;
@@ -241,6 +246,7 @@ function updatePlayerNear() {
   $('btn-use').classList.toggle('ready', !!near);
   $('btn-report').classList.toggle('ready', !!G.nearBody);
   $('btn-kill').classList.toggle('ready', !!G.nearTarget && me.killCd <= 0);
+  $('btn-sab').classList.toggle('ready', canSabotage(me));
   // aviso de ação secundária (Q / R)
   const p2 = $('prompt2'); let p2k = null, p2t = '';
   if (G.nearBody) { p2k = 'R'; p2t = 'REPORTAR o corpo'; p2.classList.add('report'); }
@@ -261,7 +267,8 @@ function playerUse() {
   if (G.phase !== 'play' || G.paused || G.inMinigame) return;
   const me = G.player, n = G.near; if (!n || !alive(me)) return;
   if (n.type === 'task') openMinigame(n.def, () => completeTask(me, n.task));
-  else if (n.type === 'emergency') { if (G.emergenciesLeft > 0 && G.meetingCd <= 0) { G.emergenciesLeft--; startMeeting({ type: 'emergency', reporter: me }); } else toast(G.meetingCd > 0 ? 'Espere um pouco para usar o botão' : 'Você já usou sua emergência'); }
+  else if (n.type === 'power') openMinigame({ icon: '⚡', name: 'Religar a caixa de força', game: 'toggleAll', p: { n: 6 } }, () => endSabotage('💡 As luzes voltaram!'));
+  else if (n.type === 'emergency') { if (SAB.active) { toast('O botão não funciona durante a sabotagem!'); return; } if (G.emergenciesLeft > 0 && G.meetingCd <= 0) { G.emergenciesLeft--; startMeeting({ type: 'emergency', reporter: me }); } else toast(G.meetingCd > 0 ? 'Espere um pouco para usar o botão' : 'Você já usou sua emergência'); }
   else if (n.type === 'secret') { me.x = n.to.x; me.y = n.to.y; SFX.play('teleport'); }
 }
 function playerReport() { if (G.phase !== 'play' || G.paused || G.inMinigame) return; if (G.nearBody && alive(G.player)) startMeeting({ type: 'body', reporter: G.player, body: G.nearBody }); }
@@ -271,6 +278,7 @@ function onKey(e) {
   if (k === 'e' || k === 'enter') { if (G.phase === 'play' && !G.inMinigame) playerUse(); }
   if (k === 'r') playerReport();
   if (k === 'q') playerKill();
+  if (k === 'f') openSabMenu();
   if (k === 'escape') { if (G.inMinigame) closeMinigame(); else if (G.phase === 'play') togglePause(); }
 }
 

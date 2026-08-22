@@ -34,11 +34,13 @@
     <div id="prompt" class="hidden"><span class="key">E</span> <span id="prompt-text">Usar</span></div>
     <div id="prompt2" class="hidden"><span class="key" id="prompt2-key">Q</span> <span id="prompt2-text">Matar</span></div>
     <div id="hint" class="hidden"></div>
+    <div id="sab-banner" class="hidden"></div>
     <div id="toast" class="hidden"></div>
     <div id="ghost-note" class="hidden">👻 Você virou fantasma — agora só observa (atravessa paredes).</div>
     <div id="touch-ui">
       <div id="joystick"><div id="joy-base"><div id="joy-knob"></div></div></div>
       <div id="touch-buttons">
+        <button id="btn-sab" class="act-btn sab hidden">SABOTAR</button>
         <button id="btn-kill" class="act-btn kill hidden">MATAR</button>
         <button id="btn-report" class="act-btn report">REPORTAR</button>
         <button id="btn-use" class="act-btn">USAR</button>
@@ -69,7 +71,7 @@
       <div class="opt-row"><label>Personagens na mansão: <b id="players-val">8</b></label><input id="players-range" type="range" min="4" max="16" value="8" aria-label="Número de personagens"><div id="crowd" aria-hidden="true"></div></div>
       <button id="btn-play" class="big-btn">JOGAR</button>
       <button id="btn-how" class="big-btn secondary">COMO JOGAR</button>
-      <p class="hint">Teclado: setas/WASD anda · <b>E</b> usa · <b>R</b> reporta · <b>Q</b> mata/engole · Celular: joystick e botões</p>
+      <p class="hint">Teclado: setas/WASD anda · <b>E</b> usa · <b>R</b> reporta · <b>Q</b> mata/engole · <b>F</b> sabota · Celular: joystick e botões</p>
       <p class="version">Criado por Lucca · versão de teste</p>
     </div>
   </div>
@@ -113,7 +115,7 @@
       <h2>Como jogar BRODS</h2>
       <div class="how-cols">
         <div class="how-box venus"><b>VENUS</b><p>Faça suas <b>missões</b> (estações amarelas: chegue perto e aperte <span class="key">E</span> / USAR). Se achar um <b>corpo</b>, aperte <span class="key">R</span> / REPORTAR. No Salão tem o <b>botão de emergência</b> (<span class="key">E</span>). Na reunião, conte o que viu e <b>vote</b> no suspeito. Vence fazendo todas as missões ou expulsando o DEMOM e o CHEFE.</p></div>
-        <div class="how-box demom"><b>DEMOM</b><p>Você parece um VENUS normal. Chegue perto de alguém <b>sozinho</b> e aperte <span class="key">Q</span> / MATAR. Depois espere o tempo de recarga. Fuja pelas <b>passagens secretas</b> (<span class="key">E</span>). Na reunião, <b>minta</b> e acuse outros. Vence quando sobrar pouco VENUS.</p></div>
+        <div class="how-box demom"><b>DEMOM</b><p>Você parece um VENUS normal. Chegue perto de alguém <b>sozinho</b> e aperte <span class="key">Q</span> / MATAR. Depois espere o tempo de recarga. Sabote com <span class="key">F</span> / SABOTAR (luzes, portas, fantasmas, missões). Fuja pelas <b>passagens secretas</b> (<span class="key">E</span>). Na reunião, <b>minta</b> e acuse outros. Vence quando sobrar pouco VENUS.</p></div>
         <div class="how-box chefe"><b>CHEFE</b><p>Você parece um VENUS normal. Chegue bem perto de alguém e aperte <span class="key">Q</span> / ENGOLIR. O engolido fica <b>60 s na sua barriga</b> — se você for expulso ou morto nesse tempo, ele escapa. Pode engolir até o DEMOM. Vence sendo o <b>último em pé</b>.</p></div>
       </div>
       <p class="hint">Andar: setas ou WASD (celular: joystick) · <span class="key">E</span> usar · <span class="key">R</span> reportar · <span class="key">Q</span> matar/engolir · <span class="key">Esc</span> pausa</p>

@@ -250,3 +250,18 @@ body.touch #touch-ui{display:block}
   .how-cols{flex-direction:column}#how-card{max-height:92vh;overflow:auto}
   #win-title{font-size:36px}
 }
+
+/* ===== sabotagem ===== */
+#sab-banner{position:absolute;left:50%;top:8%;transform:translateX(-50%);background:var(--red);color:#fff;border:3px solid #000;border-radius:12px;padding:8px 18px;font-size:15px;letter-spacing:1px;box-shadow:var(--shadow);text-transform:uppercase;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+#sab-banner.urgent{animation:blink .5s infinite}
+@keyframes blink{50%{background:#000}}
+body.touch #sab-banner{top:auto;bottom:2%;font-size:12px}
+.act-btn.sab{background:var(--purple);color:#fff;font-size:12px}
+.sab-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.sab-btn{background:var(--card);border:3px solid #000;border-radius:14px;padding:10px;color:var(--cream);text-align:left;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:4px;transition:transform .1s}
+.sab-btn:hover{transform:translateY(-2px)}
+.sab-btn:disabled{opacity:.4;cursor:default}
+.sab-btn .sab-ico{font-size:26px}
+.sab-btn b{font-size:14px;color:var(--yellow)}
+.sab-btn small{font-size:11px;color:var(--muted);font-weight:700;line-height:1.3}
+@media (max-width:600px){.sab-grid{grid-template-columns:1fr}}

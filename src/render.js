@@ -34,6 +34,11 @@ function drawMap() {
   for (const d of DECOR) { const r = roomAt(d.x + 1, d.y + 1); if (r && SPRITES['room_' + r.id]) continue; drawDecor(d); }
   // passagens secretas (só marcam o chão; uso vem na fatia 3)
   for (const s of SECRET) { for (const [x, y] of [[s.ax, s.ay], [s.bx, s.by]]) { ctx.fillStyle = '#1b1226'; rr(x - 22, y - 16, 44, 32, 6); ctx.fill(); ctx.strokeStyle = '#3b2a50'; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = '#3b2a50'; for (let i = -14; i <= 14; i += 7) ctx.fillRect(x + i - 1, y - 12, 2, 24); } }
+  // portas trancadas
+  for (const b of SAB.blocked) { ctx.fillStyle = '#3a2612'; ctx.fillRect(b.x, b.y, b.w, b.h); ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.strokeRect(b.x, b.y, b.w, b.h); ctx.fillStyle = '#c9a227'; if (b.w > b.h) for (let i = 0; i < b.w; i += 24) ctx.fillRect(b.x + i + 8, b.y + 4, 6, 8); else for (let i = 0; i < b.h; i += 24) ctx.fillRect(b.x + 4, b.y + i + 8, 8, 6); }
+  // alvos de sabotagem
+  if (SAB.active && SAB.active.type === 'lights') { const p = SAB.POWER; ctx.fillStyle = `rgba(255,211,0,${.3 + .3 * Math.sin(G.t * 6)})`; ctx.beginPath(); ctx.arc(p.x, p.y, 34, 0, 7); ctx.fill(); ctx.strokeStyle = '#ffd300'; ctx.lineWidth = 3; ctx.stroke(); }
+  if (SAB.active && SAB.active.type === 'ghosts') { const p = SAB.BELL; ctx.fillStyle = `rgba(255,60,60,${.3 + .3 * Math.sin(G.t * 8)})`; ctx.beginPath(); ctx.arc(p.x, p.y, 80, 0, 7); ctx.fill(); ctx.strokeStyle = '#ff1a1a'; ctx.lineWidth = 3; ctx.stroke(); ctx.font = '40px serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.fillText('🔔', p.x, p.y + 14); }
   // estações de missão
   for (const m of visibleStations()) {
     const done = m.done;
@@ -115,16 +120,17 @@ function drawLighting() {
   const lc = lightCanvas; if (lc.width !== canvas.width || lc.height !== canvas.height) { lc.width = canvas.width; lc.height = canvas.height; }
   const x = lc.getContext('2d');
   x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over';
-  x.fillStyle = G.dark ? 'rgba(4,0,14,.97)' : 'rgba(10,4,28,.55)'; x.fillRect(0, 0, lc.width, lc.height);
+  const darkMe = G.dark && G.player && G.player.kind !== 'demom' && G.player.alive;
+  x.fillStyle = darkMe ? 'rgba(4,0,14,.97)' : 'rgba(10,4,28,.55)'; x.fillRect(0, 0, lc.width, lc.height);
   const z = G.cam.zoom; x.setTransform(z, 0, 0, z, lc.width / 2 - G.cam.x * z, lc.height / 2 - G.cam.y * z);
   x.globalCompositeOperation = 'destination-out';
   const flick = .9 + Math.sin(G.t * 13) * .05 + Math.sin(G.t * 29) * .05;
   const spot = (lx, ly, r, a) => { const g = x.createRadialGradient(lx, ly, 0, lx, ly, r); g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(.5, `rgba(0,0,0,${a * .55})`); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.beginPath(); x.arc(lx, ly, r, 0, 7); x.fill(); };
-  if (!G.dark) for (const l of _lights) spot(l.x, l.y, l.r * (l.f ? flick : 1), .9);
+  if (!darkMe) for (const l of _lights) spot(l.x, l.y, l.r * (l.f ? flick : 1), .9);
   for (const m of visibleStations()) if (!m.done) spot(m.x, m.y, 90, .6);
-  for (const e of G.entities) { if (!e.alive && e !== G.player) continue; if (e.swallowed) continue; spot(e.x, e.y - 20, G.dark ? (e === G.player ? 150 : 60) : 230, 1); }
+  for (const e of G.entities) { if (!e.alive && e !== G.player) continue; if (e.swallowed) continue; spot(e.x, e.y - 20, darkMe ? (e === G.player ? 150 : 60) : 230, 1); }
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(lc, 0, 0); ctx.restore();
-  if (!G.dark) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (const l of _lights) { const g = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.r * .6); g.addColorStop(0, `rgba(${l.c},${.22 * (l.f ? flick : 1)})`); g.addColorStop(1, `rgba(${l.c},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(l.x, l.y, l.r * .6, 0, 7); ctx.fill(); } ctx.restore(); }
+  if (!darkMe) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (const l of _lights) { const g = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.r * .6); g.addColorStop(0, `rgba(${l.c},${.22 * (l.f ? flick : 1)})`); g.addColorStop(1, `rgba(${l.c},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(l.x, l.y, l.r * .6, 0, 7); ctx.fill(); } ctx.restore(); }
 }
 
 // ---------- Partículas: poeira, morcegos, névoa ----------
