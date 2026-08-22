@@ -47,7 +47,7 @@ function openBook() {
   const me = G.player; const chefe = G.entities.find(e => e.kind === 'chefe' && alive(e) && e.isBot);
   // risco: o CHEFE na cozinha engole na hora
   if (chefe && Math.hypot(chefe.x - me.x, chefe.y - me.y) < 380 && me.kind !== 'chefe') { swallowEntity(chefe, me); toast('😱 O CHEFE estava na Cozinha e te engoliu!'); return; }
-  G.inMinigame = true; SFX.play('open'); SP.bookReads++;
+  G.inMinigame = true; SFX.play('open'); SP.bookReads++; MED.counters.reads = (MED.counters.reads || 0) + 1; saveMedals(); if (MED.counters.reads >= 3) unlockMedal('reader');
   const body = $('mg-body'); body.innerHTML = ''; body._cleanup = null; $('mg-title').textContent = '📖 Livro dos Mortos';
   body.appendChild(el('p', 'mg-instr', 'As páginas mostram quem já morreu. Toque em "Entrevistar" para ouvir a alma por 60 segundos.'));
   const dead = G.entities.filter(e => !e.alive && !e.jailed);
@@ -111,7 +111,7 @@ function revive(d) {
   SP.altarUsed = true; d.alive = true; d.ghost = false; d.digested = false; d.swallowed = false; d.x = 870; d.y = 1060; d.speed = d.isBot ? SETTINGS.botSpeed : SETTINGS.playerSpeed;
   if (d.isBot) { d.ai.state = 'idle'; d.ai.wait = 1; d.ai.witness = null; } else { $('ghost-note').classList.add('hidden'); toast('Você voltou à vida!'); }
   G.bodies = G.bodies.filter(b => b.ent !== d);
-  SFX.play('bell'); toast(`✨ ${d.name} voltou à vida! O sino tocou na Capela…`); renderTaskList();
+  SFX.play('bell'); toast(`✨ ${d.name} voltou à vida! O sino tocou na Capela…`); renderTaskList(); unlockMedal('reviver');
   // vilões ouvem o sino e vão até a Capela
   for (const e of G.entities) if (e.isBot && alive(e) && e.kind !== 'venus') { aiGoto(e, { x: 800, y: 1100 }); e.ai.state = 'goto'; }
   if (G.player.kind !== 'venus') toast('🔔 O sino tocou na Capela! Alguém usou o Altar…');

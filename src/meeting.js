@@ -59,7 +59,7 @@ function renderMeetPlayers() {
 }
 function castVote(voter, targetId) {
   if (M.phase !== 'vote' || M.votes.has(voter.id)) return;
-  M.votes.set(voter.id, targetId);
+  M.votes.set(voter.id, targetId); if (targetId === G.player.id && voter !== G.player) G.votesAgainstMe = (G.votesAgainstMe || 0) + 1;
   if (voter === G.player) { M.playerVoted = true; $('btn-skip').disabled = true; sysLine(targetId === 'skip' ? 'Você pulou o voto.' : 'Você votou em ' + G.entities.find(e => e.id === targetId).name + '.'); }
   SFX.play('drum'); renderMeetPlayers();
 }
@@ -156,6 +156,7 @@ function finishVote() {
   $('meeting').classList.add('hidden'); M.active = false;
   showEject(ejected, () => {
     if (ejected) {
+      if (!G.firstEjectRole) { G.firstEjectRole = ejected.kind; G.myFirstVoteHit = M.votes.get(G.player.id) === ejected.id; }
       ejected.ejected = true; jailEntity(ejected); recordDeath(ejected, null);
       if (ejected.kind === 'chefe') releaseBelly(ejected);
       if (ejected === G.player) { hideHint(); toast('Você foi expulso e está na Jaula do Porão. Se os VENUS perceberem o erro, podem te soltar…'); $('ghost-note').textContent = '🔒 Você está na Jaula. Só observa — a menos que alguém te solte.'; $('ghost-note').classList.remove('hidden'); MUSIC.setMood('dark'); }

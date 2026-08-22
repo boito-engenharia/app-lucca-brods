@@ -20,7 +20,7 @@ function doSabotage(by, type, roomId) {
   if (!canSabotage(by)) return false;
   by.sabCd = SETTINGS.sabCooldown;
   if (type === 'lights') {
-    SAB.active = { type, t: 999, fixers: new Set() }; G.dark = true; SFX.play('lights');
+    SAB.active = { type, t: 999, fixers: new Set() }; G.dark = true; SFX.play('lights'); if (by === G.player) G.usedLights = true;
     if (G.player.kind !== 'demom') { MUSIC.setMood('tense'); toast('💡 As luzes apagaram! Religue na caixa de força do Porão.'); } else toast('💡 Luzes apagadas!');
     aiOnSabotage(type);
   } else if (type === 'doors') {

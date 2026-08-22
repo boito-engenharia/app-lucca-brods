@@ -150,7 +150,7 @@ function newGame() {
   const colors = VENUS_COLORS.slice();
   const ents = [];
   const me = makeEntity(myRole, colors.shift(), false); me.name = 'Você'; ents.push(me);
-  const roles = []; if (myRole !== 'demom') roles.push('demom'); if (myRole !== 'chefe') roles.push('chefe'); while (roles.length < N - 1) roles.push('venus');
+  const roles = []; const nDem = (N >= 10 && SETTINGS.demomCount >= 2) ? 2 : 1; for (let i = 0; i < nDem - (myRole === 'demom' ? 1 : 0); i++) roles.push('demom'); if (myRole !== 'chefe') roles.push('chefe'); while (roles.length < N - 1) roles.push('venus');
   // embaralha papéis dos bots
   for (let i = roles.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [roles[i], roles[j]] = [roles[j], roles[i]]; }
   roles.forEach(k => ents.push(makeEntity(k, colors.shift(), true)));
@@ -158,7 +158,7 @@ function newGame() {
   for (const e of ents) { e.tasks = pickTasks(SETTINGS.tasksPerVenus).map(t => ({ id: t.id, done: false })); if (e.kind !== 'venus') e.killCd = 12; }
   // posições iniciais em círculo no Salão
   ents.forEach((e, i) => { const a = (i / ents.length) * Math.PI * 2; e.x = 1020 + Math.cos(a) * 120; e.y = 620 + Math.sin(a) * 90; });
-  G.entities = ents; G.player = me; G.bodies = []; G.result = null; SAB.active = null; SAB.blocked = []; $('sab-banner').classList.add('hidden'); specialsReset();
+  G.entities = ents; G.player = me; G.bodies = []; G.result = null; SAB.active = null; SAB.blocked = []; $('sab-banner').classList.add('hidden'); specialsReset(); G.votesAgainstMe = 0; G.firstEjectRole = null; G.myFirstVoteHit = false; G.usedLights = false; G.secretUses = 0; G.swallowCount = 0; G.medalShield = false; G.prints = [];
   G.emergenciesLeft = SETTINGS.emergencyPerPlayer; G.meetingCd = 10;
   G.t = 0; G.last = performance.now(); G.paused = false; G.inMinigame = false; G.dark = false; G.room = null;
   G.cam.x = me.x; G.cam.y = me.y;
@@ -217,7 +217,7 @@ function update(dt) {
   for (const e of G.entities) { if (e.killCd > 0) e.killCd -= dt; if (e.revealT > 0) e.revealT -= dt; }
   // digestão
   for (const e of G.entities) if (e.swallowed && e.alive) { e.swallowT -= dt; if (e.swallowT <= 0) digest(e); }
-  sabUpdate(dt); specialsUpdate(dt);
+  sabUpdate(dt); specialsUpdate(dt); printsUpdate(dt);
   // bots
   for (const e of G.entities) if (e.isBot && alive(e)) aiUpdate(e, dt);
   aiNoticeBodies(dt);
@@ -271,7 +271,7 @@ function playerUse() {
   else if (n.type === 'special') { if (n.sp.id === 'eyes' && SP.eyesCd > 0) return; useSpecial(n.sp); }
   else if (n.type === 'power') openMinigame({ icon: '⚡', name: 'Religar a caixa de força', game: 'toggleAll', p: { n: 6 } }, () => endSabotage('💡 As luzes voltaram!'));
   else if (n.type === 'emergency') { if (SAB.active) { toast('O botão não funciona durante a sabotagem!'); return; } if (G.emergenciesLeft > 0 && G.meetingCd <= 0) { G.emergenciesLeft--; startMeeting({ type: 'emergency', reporter: me }); } else toast(G.meetingCd > 0 ? 'Espere um pouco para usar o botão' : 'Você já usou sua emergência'); }
-  else if (n.type === 'secret') { me.x = n.to.x; me.y = n.to.y; SFX.play('teleport'); }
+  else if (n.type === 'secret') { me.x = n.to.x; me.y = n.to.y; SFX.play('teleport'); G.secretUses = (G.secretUses || 0) + 1; me.jumpT = .5; }
 }
 function playerReport() { if (G.phase !== 'play' || G.paused || G.inMinigame) return; if (G.nearBody && alive(G.player)) startMeeting({ type: 'body', reporter: G.player, body: G.nearBody }); }
 function playerKill() { if (G.phase !== 'play' || G.paused || G.inMinigame) return; const me = G.player; if (!alive(me) || me.kind === 'venus' || me.killCd > 0 || !G.nearTarget) return; if (me.kind === 'demom') killEntity(me, G.nearTarget); else swallowEntity(me, G.nearTarget); }
@@ -288,7 +288,7 @@ function onKey(e) {
 function killEntity(killer, victim) {
   if (!alive(victim)) return;
   killer.killCd = SETTINGS.killCooldown; killer.revealT = 1.1;
-  if (victim.shield) { victim.shield = false; SFX.play('bad'); if (victim === G.player) { toast('🧪 A Poção de Escudo te salvou!'); G.medalShield = true; } return; }
+  if (victim.shield) { victim.shield = false; SFX.play('bad'); if (victim === G.player) { toast('🧪 A Poção de Escudo te salvou!'); unlockMedal('shield'); } return; }
   recordDeath(victim, killer);
   victim.alive = false; victim.ghost = true; victim.moving = false;
   G.bodies.push({ x: victim.x, y: victim.y, ent: victim, t: G.t, room: roomAt(victim.x, victim.y) });
@@ -301,7 +301,7 @@ function killEntity(killer, victim) {
 function swallowEntity(chefe, victim) {
   if (!alive(victim)) return;
   chefe.killCd = SETTINGS.swallowCooldown; chefe.revealT = 1.1;
-  if (victim.shield) { victim.shield = false; SFX.play('bad'); if (victim === G.player) { toast('🧪 A Poção de Escudo te salvou do CHEFE!'); G.medalShield = true; } return; }
+  if (victim.shield) { victim.shield = false; SFX.play('bad'); if (victim === G.player) { toast('🧪 A Poção de Escudo te salvou do CHEFE!'); unlockMedal('shield'); } return; }
   recordDeath(victim, chefe); G.swallowCount = (G.swallowCount || 0) + (chefe === G.player ? 1 : 0);
   victim.swallowed = true; victim.swallowT = SETTINGS.digestTime; victim.moving = false;
   SFX.play('swallow');
@@ -319,6 +319,14 @@ function releaseBelly(chefe) {
   for (const e of G.entities) if (e.swallowed && e.alive) { e.swallowed = false; e.x = chefe.x + (Math.random() - .5) * 60; e.y = chefe.y + (Math.random() - .5) * 40; if (!canStand(e.x, e.y, e.rad)) { e.x = chefe.x; e.y = chefe.y; } if (e === G.player) toast('Você foi libertado da barriga do CHEFE!'); }
 }
 function becomeGhost(msg) { hideHint(); SFX.play('ghost'); MUSIC.setMood('dark'); toast(msg); $('ghost-note').classList.remove('hidden'); $('prompt').classList.add('hidden'); G.player.speed = 260; }
+
+// ---------- Pegadas do DEMOM ----------
+function printsUpdate(dt) {
+  if (!SETTINGS.footprints) return;
+  for (const e of G.entities) { if (e.kind !== 'demom' || !alive(e) || !e.moving) continue; e.printT = (e.printT || 0) + dt; if (e.printT > .35) { e.printT = 0; G.prints.push({ x: e.x + (Math.random() - .5) * 10, y: e.y + 2, t: G.t, a: e.facing }); } }
+  G.prints = G.prints.filter(p => G.t - p.t < 6);
+}
+function drawPrints() { for (const p of G.prints) { const a = 1 - (G.t - p.t) / 6; ctx.fillStyle = `rgba(200,20,30,${a * .7})`; ctx.beginPath(); ctx.ellipse(p.x, p.y, 5, 8, p.a === 'left' || p.a === 'right' ? Math.PI / 2 : 0, 0, 7); ctx.fill(); } }
 
 // ---------- Missões ----------
 function completeTask(e, t) {
@@ -370,7 +378,7 @@ function endGame(winner) {
   if (G.phase === 'end') return;
   G.phase = 'end'; closeMinigame(); $('meeting').classList.add('hidden'); $('eject').classList.add('hidden');
   const me = G.player; const iWon = me.kind === winner;
-  MUSIC.stop(); SFX.play(iWon ? 'win' : 'lose');
+  MUSIC.stop(); SFX.play(iWon ? 'win' : 'lose'); checkMedalsEnd(winner);
   const names = { venus: 'VENUS VENCERAM!', demom: 'O DEMOM VENCEU!', chefe: 'O CHEFE VENCEU!' };
   $('win-title').textContent = names[winner]; $('win-title').className = winner;
   $('win-sub').textContent = iWon ? '🎉 Você venceu!' : 'Você perdeu desta vez…';
@@ -392,6 +400,11 @@ $('btn-restart').addEventListener('click', () => { G.paused = false; $('menu').c
 $('btn-again').addEventListener('click', () => { MUSIC.setMood('menu'); $('win').classList.add('hidden'); $('hud').classList.add('hidden'); $('start').classList.remove('hidden'); G.phase = 'start'; });
 $('btn-sound').addEventListener('click', () => { const on = SFX.toggle(); $('btn-sound').textContent = on ? '🔊' : '🔇'; });
 $('btn-play').addEventListener('click', () => { SFX.unlock(); MUSIC.setMood('menu'); newGame(); });
+$('btn-settings').addEventListener('click', () => { SFX.unlock(); openSettings(); });
+$('btn-settings-close').addEventListener('click', () => { $('settings').classList.add('hidden'); renderCrowd(); });
+$('btn-medals').addEventListener('click', () => { SFX.unlock(); openMedals(); });
+$('btn-win-medals').addEventListener('click', () => { openMedals(); });
+$('btn-medals-close').addEventListener('click', () => { $('medals').classList.add('hidden'); });
 $('btn-how').addEventListener('click', () => { SFX.unlock(); MUSIC.setMood('menu'); $('how').classList.remove('hidden'); });
 $('btn-how-close').addEventListener('click', () => { $('how').classList.add('hidden'); });
 function renderCrowd() { const n = +$('players-range').value; $('players-val').textContent = n; const c = $('crowd'); c.innerHTML = ''; for (let i = 0; i < n; i++) { const d = document.createElement('i'); const col = i === 0 ? '#ffd300' : VENUS_COLORS[i % VENUS_COLORS.length].css; d.style.background = col; c.appendChild(d); } }
@@ -438,7 +451,7 @@ function drawBody(b) {
 function render() {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
   const z = G.cam.zoom; ctx.setTransform(z, 0, 0, z, canvas.width / 2 - G.cam.x * z, canvas.height / 2 - G.cam.y * z); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-  drawMap(); drawSpecials();
+  drawMap(); drawSpecials(); drawPrints();
   for (const b of G.bodies) drawBody(b);
   const ents = G.entities.slice().sort((a, b) => a.y - b.y);
   for (const e of ents) drawEntity(e);
@@ -455,6 +468,7 @@ function loop(now) {
 }
 
 // ---------- Boot ----------
+loadSettings(); loadMedals();
 loadSprites().then(() => {
   $('start-logo').src = SPRITE_DATA.logo_main;
   document.querySelectorAll('[data-sprite]').forEach(im => im.src = SPRITE_DATA[im.dataset.sprite]);

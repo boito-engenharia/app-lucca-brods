@@ -70,7 +70,11 @@
       <div class="stripes" style="max-width:340px;margin:0 auto 12px"></div>
       <div class="opt-row"><label>Personagens na mansão: <b id="players-val">8</b></label><input id="players-range" type="range" min="4" max="16" value="8" aria-label="Número de personagens"><div id="crowd" aria-hidden="true"></div></div>
       <button id="btn-play" class="big-btn">JOGAR</button>
-      <button id="btn-how" class="big-btn secondary">COMO JOGAR</button>
+      <div class="btn-row">
+        <button id="btn-how" class="big-btn secondary">COMO JOGAR</button>
+        <button id="btn-settings" class="big-btn secondary">AJUSTES</button>
+        <button id="btn-medals" class="big-btn secondary">MEDALHAS</button>
+      </div>
       <p class="hint">Teclado: setas/WASD anda · <b>E</b> usa · <b>R</b> reporta · <b>Q</b> mata/engole · <b>F</b> sabota · Celular: joystick e botões</p>
       <p class="version">Criado por Lucca · versão de teste</p>
     </div>
@@ -123,6 +127,23 @@
     </div>
   </div>
 
+  <!-- Ajustes -->
+  <div id="settings" class="overlay hidden">
+    <div class="card" id="set-card">
+      <h2>Ajustes da partida</h2>
+      <div id="set-body"></div>
+      <button id="btn-settings-close" class="big-btn">PRONTO</button>
+    </div>
+  </div>
+  <!-- Medalhas -->
+  <div id="medals" class="overlay hidden">
+    <div class="card" id="med-card">
+      <h2>Medalhas <span id="med-count" class="med-count"></span></h2>
+      <div id="med-body"></div>
+      <button id="btn-medals-close" class="big-btn">FECHAR</button>
+    </div>
+  </div>
+
   <!-- Pause / menu -->
   <div id="menu" class="overlay hidden">
     <div class="card">
@@ -139,6 +160,7 @@
       <p id="win-sub"></p>
       <div id="win-roster"></div>
       <button id="btn-again" class="big-btn">Jogar de novo</button>
+      <button id="btn-win-medals" class="big-btn secondary">Ver medalhas</button>
     </div>
   </div>
 </div>
