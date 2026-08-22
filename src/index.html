@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>BRODS</title>
+<style>
+/*__CSS__*/
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="hud-top">
+      <div id="task-panel">
+        <div id="task-title">MISSÕES <span id="task-count">0/0</span></div>
+        <div id="task-bar"><div id="task-fill"></div></div>
+        <ul id="task-list"></ul>
+      </div>
+      <div id="room-name">Mansão</div>
+      <div id="hud-right">
+        <button id="btn-sound" class="icon-btn" title="Som">🔊</button>
+        <button id="btn-menu" class="icon-btn" title="Menu">☰</button>
+      </div>
+    </div>
+    <div id="prompt" class="hidden"><span class="key">E</span> <span id="prompt-text">Usar</span></div>
+    <div id="toast" class="hidden"></div>
+    <div id="touch-ui">
+      <div id="joystick"><div id="joy-base"><div id="joy-knob"></div></div></div>
+      <div id="touch-buttons">
+        <button id="btn-use" class="act-btn">USAR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Minigame overlay -->
+  <div id="minigame" class="overlay hidden">
+    <div id="mg-card">
+      <div id="mg-head"><span id="mg-title">Missão</span><button id="mg-close" class="icon-btn">✕</button></div>
+      <div id="mg-body"></div>
+    </div>
+  </div>
+
+  <!-- Start screen -->
+  <div id="start" class="overlay">
+    <div id="start-card">
+      <img id="start-logo" alt="BRODS">
+      <p class="tagline">Mistério na Mansão Assombrada</p>
+      <div id="start-roles">
+        <div class="role-chip venus"><img data-sprite="venus_front" alt=""><span>VENUS</span></div>
+        <div class="role-chip demom"><img data-sprite="demom_front" alt=""><span>DEMOM</span></div>
+        <div class="role-chip chefe"><img data-sprite="chefe_front" alt=""><span>CHEFE</span></div>
+      </div>
+      <button id="btn-play" class="big-btn">JOGAR</button>
+      <p class="hint">Teclado: setas ou WASD para andar · <b>E</b> para usar · No celular: joystick e botão USAR</p>
+      <p class="version">Fatia 1 — a mansão, o VENUS e as missões · criado por Lucca</p>
+    </div>
+  </div>
+
+  <!-- Pause / menu -->
+  <div id="menu" class="overlay hidden">
+    <div class="card">
+      <h2>Pausa</h2>
+      <button id="btn-resume" class="big-btn">Continuar</button>
+      <button id="btn-restart" class="big-btn secondary">Reiniciar</button>
+    </div>
+  </div>
+
+  <!-- Win screen (fatia 1: todas as missões) -->
+  <div id="win" class="overlay hidden">
+    <div class="card">
+      <h2>🎉 Todas as missões feitas!</h2>
+      <p>A mansão está segura… por enquanto. Na próxima fatia chegam o DEMOM e o CHEFE.</p>
+      <button id="btn-again" class="big-btn">Jogar de novo</button>
+    </div>
+  </div>
+</div>
+<script>
+/*__SPRITES__*/
+/*__JS__*/
+</script>
+</body>
+</html>
