@@ -78,6 +78,7 @@ const G = {
   nearMission: null,
   room: null,
   walk: [],
+  dark: false,
 };
 
 const keys = {};
@@ -241,11 +242,13 @@ function drawMap() {
   ctx.fillStyle = '#f4efc2'; ctx.beginPath(); ctx.arc(WORLD.w - 120, -60, 70, 0, 7); ctx.fill(); ctx.fillStyle = '#0e0820'; ctx.beginPath(); ctx.arc(WORLD.w - 90, -80, 62, 0, 7); ctx.fill();
   // paredes (retângulos expandidos)
   for (const r of G.walk) { ctx.fillStyle = '#0a0614'; rr(r.x - WALL - 6, r.y - WALL - 6, r.w + 2 * WALL + 12, r.h + 2 * WALL + 12, 14); ctx.fill(); }
-  for (const r of ROOMS) { ctx.fillStyle = r.wall; rr(r.x - WALL, r.y - WALL, r.w + 2 * WALL, r.h + 2 * WALL, 10); ctx.fill(); }
+  for (const r of ROOMS) { ctx.fillStyle = r.wall; rr(r.x - WALL, r.y - WALL, r.w + 2 * WALL, r.h + 2 * WALL, 10); ctx.fill(); ctx.save(); ctx.clip(); ctx.fillStyle = stonePattern(); ctx.fillRect(r.x - WALL, r.y - WALL, r.w + 2 * WALL, r.h + 2 * WALL); ctx.restore(); }
   for (const c of CORRIDORS) { ctx.fillStyle = '#2a1f3a'; ctx.fillRect(c.x - WALL, c.y - WALL, c.w + 2 * WALL, c.h + 2 * WALL); }
   // chão
   for (const c of CORRIDORS) { ctx.fillStyle = '#4b3d5e'; ctx.fillRect(c.x, c.y, c.w, c.h); }
   for (const r of ROOMS) {
+    const art = SPRITES['room_' + r.id];
+    if (art) { ctx.drawImage(art, r.x, r.y, r.w, r.h); continue; }
     ctx.fillStyle = r.floor; ctx.fillRect(r.x, r.y, r.w, r.h);
     // tábuas
     ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = 2; ctx.beginPath();
@@ -254,8 +257,10 @@ function drawMap() {
     // nome do cômodo
     ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.font = '900 22px Trebuchet MS, Arial'; ctx.textAlign = 'center'; ctx.fillText(r.name.toUpperCase(), r.x + r.w / 2, r.y + r.h - 14);
   }
-  // decorações
-  for (const d of DECOR) drawDecor(d);
+  // sombra interna no alto das paredes
+  for (const r of ROOMS) { const g = ctx.createLinearGradient(0, r.y, 0, r.y + 28); g.addColorStop(0, 'rgba(0,0,0,.45)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(r.x, r.y, r.w, 28); }
+  // decorações (só nos cômodos sem arte)
+  for (const d of DECOR) { const r = roomAt(d.x + 1, d.y + 1); if (r && SPRITES['room_' + r.id]) continue; drawDecor(d); }
   // passagens secretas (só marcam o chão; uso vem na fatia 3)
   for (const s of SECRET) { for (const [x, y] of [[s.ax, s.ay], [s.bx, s.by]]) { ctx.fillStyle = '#1b1226'; rr(x - 22, y - 16, 44, 32, 6); ctx.fill(); ctx.strokeStyle = '#3b2a50'; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = '#3b2a50'; for (let i = -14; i <= 14; i += 7) ctx.fillRect(x + i - 1, y - 12, 2, 24); } }
   // estações de missão
@@ -330,6 +335,71 @@ function render() {
   drawMap();
   const ents = G.entities.slice().sort((a, b) => a.y - b.y);
   for (const e of ents) drawEntity(e);
+  drawParticles();
+  drawLighting();
+}
+
+// ---------- Textura de pedra das paredes ----------
+let _stone = null;
+function stonePattern() {
+  if (_stone) return _stone;
+  const c = document.createElement('canvas'); c.width = 64; c.height = 48; const x = c.getContext('2d');
+  x.strokeStyle = 'rgba(0,0,0,.35)'; x.lineWidth = 2;
+  for (let row = 0; row < 3; row++) { const y = row * 16 + 8; x.beginPath(); x.moveTo(0, y); x.lineTo(64, y); x.stroke(); const off = row % 2 ? 16 : 0; for (let bx = off; bx < 64; bx += 32) { x.beginPath(); x.moveTo(bx, y - 8); x.lineTo(bx, y + 8); x.stroke(); } }
+  x.fillStyle = 'rgba(255,255,255,.05)'; for (let i = 0; i < 12; i++) x.fillRect(Math.random() * 64, Math.random() * 48, 6, 3);
+  _stone = ctx.createPattern(c, 'repeat'); return _stone;
+}
+
+// ---------- Iluminação (escuridão + luzes) ----------
+const lightCanvas = document.createElement('canvas');
+function lightSources() {
+  const L = [];
+  for (const d of DECOR) {
+    if (d.type === 'candel') L.push({ x: d.x, y: d.y - 10, r: 190, c: '255,180,60', f: 1 });
+    else if (d.type === 'window') L.push({ x: d.x + d.w / 2, y: d.y + d.h / 2, r: 220, c: '160,190,255', f: 0 });
+    else if (d.type === 'cauldron') L.push({ x: d.x, y: d.y - 10, r: 170, c: '120,255,120', f: 1 });
+    else if (d.type === 'tank') L.push({ x: d.x + 25, y: d.y + 55, r: 150, c: '120,200,255', f: 0 });
+    else if (d.type === 'altar') L.push({ x: d.x, y: d.y - 20, r: 180, c: '255,200,90', f: 1 });
+    else if (d.type === 'powerbox') L.push({ x: d.x, y: d.y, r: 120, c: '255,220,80', f: 1 });
+    else if (d.type === 'stairs') L.push({ x: d.x + 60, y: d.y + 40, r: 260, c: '255,210,120', f: 0 });
+  }
+  return L;
+}
+let _lights = null;
+function drawLighting() {
+  if (!_lights) _lights = lightSources();
+  const lc = lightCanvas; if (lc.width !== canvas.width || lc.height !== canvas.height) { lc.width = canvas.width; lc.height = canvas.height; }
+  const x = lc.getContext('2d');
+  x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over';
+  x.fillStyle = G.dark ? 'rgba(4,0,14,.97)' : 'rgba(10,4,28,.55)'; x.fillRect(0, 0, lc.width, lc.height);
+  const z = G.cam.zoom; x.setTransform(z, 0, 0, z, lc.width / 2 - G.cam.x * z, lc.height / 2 - G.cam.y * z);
+  x.globalCompositeOperation = 'destination-out';
+  const flick = .9 + Math.sin(G.t * 13) * .05 + Math.sin(G.t * 29) * .05;
+  const spot = (lx, ly, r, a) => { const g = x.createRadialGradient(lx, ly, 0, lx, ly, r); g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(.5, `rgba(0,0,0,${a * .55})`); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.beginPath(); x.arc(lx, ly, r, 0, 7); x.fill(); };
+  if (!G.dark) for (const l of _lights) spot(l.x, l.y, l.r * (l.f ? flick : 1), .9);
+  for (const m of G.missions) if (!G.done.has(m.id)) spot(m.x, m.y, 90, .6);
+  for (const e of G.entities) spot(e.x, e.y - 20, G.dark ? (e === G.player ? 150 : 60) : 230, 1);
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(lc, 0, 0); ctx.restore();
+  if (!G.dark) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (const l of _lights) { const g = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.r * .6); g.addColorStop(0, `rgba(${l.c},${.22 * (l.f ? flick : 1)})`); g.addColorStop(1, `rgba(${l.c},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(l.x, l.y, l.r * .6, 0, 7); ctx.fill(); } ctx.restore(); }
+}
+
+// ---------- Partículas: poeira, morcegos, névoa ----------
+const PARTS = { dust: [], bats: [], fog: [] };
+function initParticles() {
+  PARTS.dust = Array.from({ length: 140 }, () => ({ x: Math.random() * WORLD.w, y: Math.random() * WORLD.h, s: Math.random() * 1.6 + .6, p: Math.random() * 7, v: 6 + Math.random() * 10 }));
+  PARTS.bats = Array.from({ length: 5 }, (_, i) => ({ x: Math.random() * WORLD.w, y: -80 - Math.random() * 120, v: 60 + Math.random() * 60, p: i * 1.3 }));
+  const fogRooms = ROOMS.filter(r => ['jardim', 'porao', 'capela'].includes(r.id));
+  PARTS.fog = fogRooms.flatMap(r => Array.from({ length: 6 }, () => ({ x: r.x + Math.random() * r.w, y: r.y + r.h * .5 + Math.random() * r.h * .5, r: 60 + Math.random() * 70, v: 8 + Math.random() * 10, room: r })));
+}
+function drawParticles() {
+  if (!PARTS.dust.length) initParticles();
+  const t = G.t;
+  for (const f of PARTS.fog) { f.x += f.v * .016; if (f.x > f.room.x + f.room.w + f.r) f.x = f.room.x - f.r; const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r); g.addColorStop(0, 'rgba(200,190,230,.16)'); g.addColorStop(1, 'rgba(200,190,230,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 7); ctx.fill(); }
+  ctx.fillStyle = 'rgba(255,240,200,.55)';
+  for (const d of PARTS.dust) { const px = d.x + Math.sin(t * .5 + d.p) * 18, py = d.y - ((t * d.v + d.p * 50) % 220) + 110; if (!inWalk(px, py)) continue; ctx.globalAlpha = .25 + .35 * Math.sin(t * 2 + d.p) ** 2; ctx.beginPath(); ctx.arc(px, py, d.s, 0, 7); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#000';
+  for (const b of PARTS.bats) { b.x += b.v * .016; if (b.x > WORLD.w + 100) { b.x = -100; b.y = -80 - Math.random() * 120; } const wy = Math.sin(t * 14 + b.p) * 6, bx = b.x, by = b.y + Math.sin(t + b.p) * 20; ctx.beginPath(); ctx.moveTo(bx - 16, by + wy); ctx.quadraticCurveTo(bx - 8, by - 6, bx, by); ctx.quadraticCurveTo(bx + 8, by - 6, bx + 16, by + wy); ctx.quadraticCurveTo(bx + 8, by + 4, bx, by + 6); ctx.quadraticCurveTo(bx - 8, by + 4, bx - 16, by + wy); ctx.fill(); }
 }
 
 function loop(now) {

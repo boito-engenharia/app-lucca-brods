@@ -18,6 +18,15 @@ for f in sorted(os.listdir(SPR)):
         with open(os.path.join(SPR, f), 'rb') as fh:
             sprites[f[:-4]] = 'data:image/png;base64,' + base64.b64encode(fh.read()).decode()
 
+# arte dos cômodos (assets/comodos/<id>.png -> room_<id>)
+COM = os.path.join(ROOT, 'assets', 'comodos')
+if os.path.isdir(COM):
+    for f in sorted(os.listdir(COM)):
+        if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+            mime = 'image/png' if f.lower().endswith('.png') else 'image/webp' if f.lower().endswith('.webp') else 'image/jpeg'
+            with open(os.path.join(COM, f), 'rb') as fh:
+                sprites['room_' + os.path.splitext(f)[0].lower()] = f'data:{mime};base64,' + base64.b64encode(fh.read()).decode()
+
 html = read(os.path.join(SRC, 'index.html'))
 css = read(os.path.join(SRC, 'style.css'))
 js_parts = [read(os.path.join(SRC, n)) for n in ['data.js', 'minigames.js', 'game.js']]
