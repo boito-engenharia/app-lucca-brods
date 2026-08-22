@@ -14,9 +14,11 @@ def read(p):
 
 sprites = {}
 for f in sorted(os.listdir(SPR)):
-    if f.endswith('.png'):
+    ext = os.path.splitext(f)[1].lower()
+    if ext in ('.png', '.webp'):
+        mime = 'image/png' if ext == '.png' else 'image/webp'
         with open(os.path.join(SPR, f), 'rb') as fh:
-            sprites[f[:-4]] = 'data:image/png;base64,' + base64.b64encode(fh.read()).decode()
+            sprites[os.path.splitext(f)[0]] = f'data:{mime};base64,' + base64.b64encode(fh.read()).decode()
 
 # arte dos cômodos (assets/comodos/<id>.png -> room_<id>)
 COM = os.path.join(ROOT, 'assets', 'comodos')

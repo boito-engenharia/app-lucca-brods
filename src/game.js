@@ -72,7 +72,7 @@ function trueSprites(kind) { return { front: SPRITES[kind + '_front'], back: SPR
 
 // ---------- Estado ----------
 const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d'); ctx.imageSmoothingQuality = 'high';
 const $ = (id) => document.getElementById(id);
 const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 if (isTouch) document.body.classList.add('touch');
@@ -423,7 +423,7 @@ function drawBody(b) {
 }
 function render() {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const z = G.cam.zoom; ctx.setTransform(z, 0, 0, z, canvas.width / 2 - G.cam.x * z, canvas.height / 2 - G.cam.y * z);
+  const z = G.cam.zoom; ctx.setTransform(z, 0, 0, z, canvas.width / 2 - G.cam.x * z, canvas.height / 2 - G.cam.y * z); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   drawMap();
   for (const b of G.bodies) drawBody(b);
   const ents = G.entities.slice().sort((a, b) => a.y - b.y);
