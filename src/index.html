@@ -32,6 +32,8 @@
       </div>
     </div>
     <div id="prompt" class="hidden"><span class="key">E</span> <span id="prompt-text">Usar</span></div>
+    <div id="prompt2" class="hidden"><span class="key" id="prompt2-key">Q</span> <span id="prompt2-text">Matar</span></div>
+    <div id="hint" class="hidden"></div>
     <div id="toast" class="hidden"></div>
     <div id="ghost-note" class="hidden">👻 Você virou fantasma — agora só observa (atravessa paredes).</div>
     <div id="touch-ui">
@@ -65,6 +67,7 @@
       </div>
       <div class="opt-row"><label>Personagens na mansão: <b id="players-val">8</b></label><input id="players-range" type="range" min="4" max="16" value="8"></div>
       <button id="btn-play" class="big-btn">JOGAR</button>
+      <button id="btn-how" class="big-btn secondary">COMO JOGAR</button>
       <p class="hint">Teclado: setas/WASD anda · <b>E</b> usa · <b>R</b> reporta · <b>Q</b> mata/engole · Celular: joystick e botões</p>
       <p class="version">Fatia 2 (teste) — criado por Lucca</p>
     </div>
@@ -78,6 +81,7 @@
       <h1 id="reveal-role">VENUS</h1>
       <p id="reveal-goal"></p>
       <p id="reveal-mates" class="hint"></p>
+      <div id="reveal-controls"></div>
     </div>
   </div>
 
@@ -101,6 +105,20 @@
 
   <!-- Eject result -->
   <div id="eject" class="overlay hidden"><div id="eject-card"><img id="eject-img" alt=""><h2 id="eject-text"></h2></div></div>
+
+  <!-- Como jogar -->
+  <div id="how" class="overlay hidden">
+    <div class="card" id="how-card">
+      <h2>Como jogar BRODS</h2>
+      <div class="how-cols">
+        <div class="how-box venus"><b>VENUS</b><p>Faça suas <b>missões</b> (estações amarelas: chegue perto e aperte <span class="key">E</span> / USAR). Se achar um <b>corpo</b>, aperte <span class="key">R</span> / REPORTAR. No Salão tem o <b>botão de emergência</b> (<span class="key">E</span>). Na reunião, conte o que viu e <b>vote</b> no suspeito. Vence fazendo todas as missões ou expulsando o DEMOM e o CHEFE.</p></div>
+        <div class="how-box demom"><b>DEMOM</b><p>Você parece um VENUS normal. Chegue perto de alguém <b>sozinho</b> e aperte <span class="key">Q</span> / MATAR. Depois espere o tempo de recarga. Fuja pelas <b>passagens secretas</b> (<span class="key">E</span>). Na reunião, <b>minta</b> e acuse outros. Vence quando sobrar pouco VENUS.</p></div>
+        <div class="how-box chefe"><b>CHEFE</b><p>Você parece um VENUS normal. Chegue bem perto de alguém e aperte <span class="key">Q</span> / ENGOLIR. O engolido fica <b>60 s na sua barriga</b> — se você for expulso ou morto nesse tempo, ele escapa. Pode engolir até o DEMOM. Vence sendo o <b>último em pé</b>.</p></div>
+      </div>
+      <p class="hint">Andar: setas ou WASD (celular: joystick) · <span class="key">E</span> usar · <span class="key">R</span> reportar · <span class="key">Q</span> matar/engolir · <span class="key">Esc</span> pausa</p>
+      <button id="btn-how-close" class="big-btn">ENTENDI</button>
+    </div>
+  </div>
 
   <!-- Pause / menu -->
   <div id="menu" class="overlay hidden">

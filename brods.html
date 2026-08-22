@@ -203,6 +203,22 @@ body.touch #cooldown{bottom:auto;top:70px}
   #role-banner{font-size:10px}
 }
 
+/* instruções */
+#prompt2{position:absolute;left:50%;bottom:26%;transform:translateX(-50%);background:var(--panel);border:3px solid #000;border-radius:12px;padding:8px 16px;font-weight:900;font-size:16px;box-shadow:0 4px 0 #000;animation:bob 1s infinite}
+#prompt2 .key{display:inline-block;background:var(--red);color:#fff;border-radius:6px;padding:0 8px;margin-right:6px;border:2px solid #000}
+#prompt2.report .key{background:#fff;color:#000}
+#hint{position:absolute;left:50%;top:14%;transform:translateX(-50%);background:rgba(0,0,0,.8);border:3px solid var(--accent);border-radius:12px;padding:8px 16px;font-weight:900;font-size:15px;max-width:90vw;text-align:center}
+.key{display:inline-block;background:var(--accent);color:#000;border-radius:6px;padding:0 7px;border:2px solid #000;font-weight:900}
+#how-card{max-width:820px;text-align:left}
+#how-card h2{text-align:center}
+.how-cols{display:flex;gap:10px;flex-wrap:wrap}
+.how-box{flex:1;min-width:200px;background:#1a1030;border:3px solid #000;border-radius:14px;padding:10px;font-size:13px}
+.how-box b:first-child{font-size:16px;letter-spacing:1px}
+.how-box.venus b:first-child{color:var(--accent)}.how-box.demom b:first-child{color:var(--red)}.how-box.chefe b:first-child{color:#b98cff}
+.how-box p{margin:6px 0 0;line-height:1.4}
+#reveal-controls{margin-top:14px;font-size:15px;font-weight:900;background:rgba(255,255,255,.08);border:3px solid #000;border-radius:12px;padding:10px 16px;display:inline-block;line-height:1.8}
+@media (max-width:700px){.how-cols{flex-direction:column}#how-card{max-height:92vh;overflow:auto}}
+
 </style>
 </head>
 <body>
@@ -227,6 +243,8 @@ body.touch #cooldown{bottom:auto;top:70px}
       </div>
     </div>
     <div id="prompt" class="hidden"><span class="key">E</span> <span id="prompt-text">Usar</span></div>
+    <div id="prompt2" class="hidden"><span class="key" id="prompt2-key">Q</span> <span id="prompt2-text">Matar</span></div>
+    <div id="hint" class="hidden"></div>
     <div id="toast" class="hidden"></div>
     <div id="ghost-note" class="hidden">👻 Você virou fantasma — agora só observa (atravessa paredes).</div>
     <div id="touch-ui">
@@ -260,6 +278,7 @@ body.touch #cooldown{bottom:auto;top:70px}
       </div>
       <div class="opt-row"><label>Personagens na mansão: <b id="players-val">8</b></label><input id="players-range" type="range" min="4" max="16" value="8"></div>
       <button id="btn-play" class="big-btn">JOGAR</button>
+      <button id="btn-how" class="big-btn secondary">COMO JOGAR</button>
       <p class="hint">Teclado: setas/WASD anda · <b>E</b> usa · <b>R</b> reporta · <b>Q</b> mata/engole · Celular: joystick e botões</p>
       <p class="version">Fatia 2 (teste) — criado por Lucca</p>
     </div>
@@ -273,6 +292,7 @@ body.touch #cooldown{bottom:auto;top:70px}
       <h1 id="reveal-role">VENUS</h1>
       <p id="reveal-goal"></p>
       <p id="reveal-mates" class="hint"></p>
+      <div id="reveal-controls"></div>
     </div>
   </div>
 
@@ -296,6 +316,20 @@ body.touch #cooldown{bottom:auto;top:70px}
 
   <!-- Eject result -->
   <div id="eject" class="overlay hidden"><div id="eject-card"><img id="eject-img" alt=""><h2 id="eject-text"></h2></div></div>
+
+  <!-- Como jogar -->
+  <div id="how" class="overlay hidden">
+    <div class="card" id="how-card">
+      <h2>Como jogar BRODS</h2>
+      <div class="how-cols">
+        <div class="how-box venus"><b>VENUS</b><p>Faça suas <b>missões</b> (estações amarelas: chegue perto e aperte <span class="key">E</span> / USAR). Se achar um <b>corpo</b>, aperte <span class="key">R</span> / REPORTAR. No Salão tem o <b>botão de emergência</b> (<span class="key">E</span>). Na reunião, conte o que viu e <b>vote</b> no suspeito. Vence fazendo todas as missões ou expulsando o DEMOM e o CHEFE.</p></div>
+        <div class="how-box demom"><b>DEMOM</b><p>Você parece um VENUS normal. Chegue perto de alguém <b>sozinho</b> e aperte <span class="key">Q</span> / MATAR. Depois espere o tempo de recarga. Fuja pelas <b>passagens secretas</b> (<span class="key">E</span>). Na reunião, <b>minta</b> e acuse outros. Vence quando sobrar pouco VENUS.</p></div>
+        <div class="how-box chefe"><b>CHEFE</b><p>Você parece um VENUS normal. Chegue bem perto de alguém e aperte <span class="key">Q</span> / ENGOLIR. O engolido fica <b>60 s na sua barriga</b> — se você for expulso ou morto nesse tempo, ele escapa. Pode engolir até o DEMOM. Vence sendo o <b>último em pé</b>.</p></div>
+      </div>
+      <p class="hint">Andar: setas ou WASD (celular: joystick) · <span class="key">E</span> usar · <span class="key">R</span> reportar · <span class="key">Q</span> matar/engolir · <span class="key">Esc</span> pausa</p>
+      <button id="btn-how-close" class="big-btn">ENTENDI</button>
+    </div>
+  </div>
 
   <!-- Pause / menu -->
   <div id="menu" class="overlay hidden">
@@ -1147,8 +1181,13 @@ function newGame() {
   const info = ROLE_INFO[myRole];
   $('reveal-img').src = SPRITE_DATA[myRole + '_front']; $('reveal-role').textContent = info.title; $('reveal-role').className = info.cls; $('reveal-goal').textContent = info.goal;
   $('reveal-mates').textContent = myRole === 'venus' ? `Há 1 DEMOM e 1 CHEFE escondidos entre os ${N - 1} outros. Eles parecem VENUS normais!` : 'Para os outros você parece um VENUS normal. Só você sabe quem é.';
+  const touch = document.body.classList.contains('touch');
+  const K = (k, t) => touch ? `<b>${t}</b>` : `<span class="key">${k}</span> ${t}`;
+  $('reveal-controls').innerHTML = myRole === 'venus' ? `${K('E', 'USAR')} nas estações amarelas = missão<br>${K('R', 'REPORTAR')} perto de um corpo<br>Botão de emergência no Salão: ${K('E', 'USAR')}`
+    : myRole === 'demom' ? `Chegue perto de alguém sozinho e aperte ${K('Q', 'MATAR')}<br>Espere a recarga · fuja pelas passagens secretas (${K('E', 'USAR')})<br>Na reunião: minta e acuse!`
+    : `Chegue bem perto de alguém e aperte ${K('Q', 'ENGOLIR')}<br>Ele fica 60 s na sua barriga — não seja expulso!<br>Pode engolir até o DEMOM`;
   $('reveal').classList.remove('hidden'); SFX.play(myRole === 'venus' ? 'ok' : 'kill');
-  setTimeout(() => { $('reveal').classList.add('hidden'); G.phase = 'play'; $('hud').classList.remove('hidden'); setupHud(); toast(myRole === 'venus' ? 'Faça suas missões e fique de olho!' : 'Disfarce… e ataque quando ninguém estiver olhando.'); }, 3200);
+  setTimeout(() => { $('reveal').classList.add('hidden'); G.phase = 'play'; $('hud').classList.remove('hidden'); setupHud(); G.hintT = 40; showHint(myRole === 'venus' ? 'Siga as estações amarelas e aperte E pra fazer a missão. Viu um corpo? Aperte R.' : myRole === 'demom' ? 'Você parece um VENUS. Chegue perto de alguém sozinho e aperte Q pra MATAR (recarga: 12 s).' : 'Você parece um VENUS. Chegue bem perto de alguém e aperte Q pra ENGOLIR (recarga: 12 s).'); }, 5200);
 }
 function pickTasks(n) {
   const pool = TASKS.slice(); const out = []; const usedRooms = new Set();
@@ -1216,6 +1255,12 @@ function updatePlayerNear() {
   $('btn-use').classList.toggle('ready', !!near);
   $('btn-report').classList.toggle('ready', !!G.nearBody);
   $('btn-kill').classList.toggle('ready', !!G.nearTarget && me.killCd <= 0);
+  // aviso de ação secundária (Q / R)
+  const p2 = $('prompt2'); let p2k = null, p2t = '';
+  if (G.nearBody) { p2k = 'R'; p2t = 'REPORTAR o corpo'; p2.classList.add('report'); }
+  else if (G.nearTarget) { p2.classList.remove('report'); p2k = 'Q'; p2t = me.killCd > 0 ? (me.kind === 'chefe' ? 'ENGOLIR (carregando ' : 'MATAR (carregando ') + Math.ceil(me.killCd) + 's)' : (me.kind === 'chefe' ? 'ENGOLIR ' : 'MATAR ') + G.nearTarget.name; }
+  if (p2k) { p2.classList.remove('hidden'); $('prompt2-key').textContent = p2k; $('prompt2-text').textContent = p2t; } else p2.classList.add('hidden');
+  if (G.hintT > 0) { G.hintT -= 1 / 60; if (G.hintT <= 0) hideHint(); }
 }
 function updateCooldownHud() {
   const me = G.player;
@@ -1273,7 +1318,7 @@ function digest(victim) {
 function releaseBelly(chefe) {
   for (const e of G.entities) if (e.swallowed && e.alive) { e.swallowed = false; e.x = chefe.x + (Math.random() - .5) * 60; e.y = chefe.y + (Math.random() - .5) * 40; if (!canStand(e.x, e.y, e.rad)) { e.x = chefe.x; e.y = chefe.y; } if (e === G.player) toast('Você foi libertado da barriga do CHEFE!'); }
 }
-function becomeGhost(msg) { toast(msg); $('ghost-note').classList.remove('hidden'); $('prompt').classList.add('hidden'); G.player.speed = 260; }
+function becomeGhost(msg) { hideHint(); toast(msg); $('ghost-note').classList.remove('hidden'); $('prompt').classList.add('hidden'); G.player.speed = 260; }
 
 // ---------- Missões ----------
 function completeTask(e, t) {
@@ -1304,6 +1349,8 @@ function openMinigame(def, onDone) {
 }
 function closeMinigame() { const body = $('mg-body'); if (body._cleanup) { try { body._cleanup(); } catch (e) { } } $('minigame').classList.add('hidden'); body.innerHTML = ''; G.inMinigame = false; _mgDone = null; }
 $('mg-close').addEventListener('click', closeMinigame);
+function showHint(msg) { const h = $('hint'); h.textContent = msg; h.classList.remove('hidden'); }
+function hideHint() { $('hint').classList.add('hidden'); }
 let toastT = null;
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.add('hidden'), 2600); }
 
@@ -1345,6 +1392,8 @@ $('btn-restart').addEventListener('click', () => { G.paused = false; $('menu').c
 $('btn-again').addEventListener('click', () => { $('win').classList.add('hidden'); $('hud').classList.add('hidden'); $('start').classList.remove('hidden'); G.phase = 'start'; });
 $('btn-sound').addEventListener('click', () => { const on = SFX.toggle(); $('btn-sound').textContent = on ? '🔊' : '🔇'; });
 $('btn-play').addEventListener('click', () => { SFX.unlock(); newGame(); });
+$('btn-how').addEventListener('click', () => { $('how').classList.remove('hidden'); });
+$('btn-how-close').addEventListener('click', () => { $('how').classList.add('hidden'); });
 $('players-range').addEventListener('input', e => { $('players-val').textContent = e.target.value; });
 
 // ---------- Desenho ----------
@@ -1541,7 +1590,7 @@ const M = { active: false, phase: 'talk', timer: 0, votes: new Map(), info: null
 function startMeeting(info) {
   if (G.phase !== 'play' || M.active) return;
   M.active = true; M.info = info; M.votes = new Map(); M.suspicion = new Map(); M.accusations = []; M.playerVoted = false; M.talkTimers = [];
-  closeMinigame(); G.phase = 'meeting'; SFX.play('alarm');
+  closeMinigame(); hideHint(); $('prompt2').classList.add('hidden'); G.phase = 'meeting'; SFX.play('alarm');
   // onde cada um estava
   for (const e of G.entities) { const r = roomAt(e.x, e.y); e.roomAtMeeting = r ? r.id : null; }
   // teleporta os vivos para o Salão

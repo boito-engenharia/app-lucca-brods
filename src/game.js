@@ -163,8 +163,13 @@ function newGame() {
   const info = ROLE_INFO[myRole];
   $('reveal-img').src = SPRITE_DATA[myRole + '_front']; $('reveal-role').textContent = info.title; $('reveal-role').className = info.cls; $('reveal-goal').textContent = info.goal;
   $('reveal-mates').textContent = myRole === 'venus' ? `Há 1 DEMOM e 1 CHEFE escondidos entre os ${N - 1} outros. Eles parecem VENUS normais!` : 'Para os outros você parece um VENUS normal. Só você sabe quem é.';
+  const touch = document.body.classList.contains('touch');
+  const K = (k, t) => touch ? `<b>${t}</b>` : `<span class="key">${k}</span> ${t}`;
+  $('reveal-controls').innerHTML = myRole === 'venus' ? `${K('E', 'USAR')} nas estações amarelas = missão<br>${K('R', 'REPORTAR')} perto de um corpo<br>Botão de emergência no Salão: ${K('E', 'USAR')}`
+    : myRole === 'demom' ? `Chegue perto de alguém sozinho e aperte ${K('Q', 'MATAR')}<br>Espere a recarga · fuja pelas passagens secretas (${K('E', 'USAR')})<br>Na reunião: minta e acuse!`
+    : `Chegue bem perto de alguém e aperte ${K('Q', 'ENGOLIR')}<br>Ele fica 60 s na sua barriga — não seja expulso!<br>Pode engolir até o DEMOM`;
   $('reveal').classList.remove('hidden'); SFX.play(myRole === 'venus' ? 'ok' : 'kill');
-  setTimeout(() => { $('reveal').classList.add('hidden'); G.phase = 'play'; $('hud').classList.remove('hidden'); setupHud(); toast(myRole === 'venus' ? 'Faça suas missões e fique de olho!' : 'Disfarce… e ataque quando ninguém estiver olhando.'); }, 3200);
+  setTimeout(() => { $('reveal').classList.add('hidden'); G.phase = 'play'; $('hud').classList.remove('hidden'); setupHud(); G.hintT = 40; showHint(myRole === 'venus' ? 'Siga as estações amarelas e aperte E pra fazer a missão. Viu um corpo? Aperte R.' : myRole === 'demom' ? 'Você parece um VENUS. Chegue perto de alguém sozinho e aperte Q pra MATAR (recarga: 12 s).' : 'Você parece um VENUS. Chegue bem perto de alguém e aperte Q pra ENGOLIR (recarga: 12 s).'); }, 5200);
 }
 function pickTasks(n) {
   const pool = TASKS.slice(); const out = []; const usedRooms = new Set();
@@ -232,6 +237,12 @@ function updatePlayerNear() {
   $('btn-use').classList.toggle('ready', !!near);
   $('btn-report').classList.toggle('ready', !!G.nearBody);
   $('btn-kill').classList.toggle('ready', !!G.nearTarget && me.killCd <= 0);
+  // aviso de ação secundária (Q / R)
+  const p2 = $('prompt2'); let p2k = null, p2t = '';
+  if (G.nearBody) { p2k = 'R'; p2t = 'REPORTAR o corpo'; p2.classList.add('report'); }
+  else if (G.nearTarget) { p2.classList.remove('report'); p2k = 'Q'; p2t = me.killCd > 0 ? (me.kind === 'chefe' ? 'ENGOLIR (carregando ' : 'MATAR (carregando ') + Math.ceil(me.killCd) + 's)' : (me.kind === 'chefe' ? 'ENGOLIR ' : 'MATAR ') + G.nearTarget.name; }
+  if (p2k) { p2.classList.remove('hidden'); $('prompt2-key').textContent = p2k; $('prompt2-text').textContent = p2t; } else p2.classList.add('hidden');
+  if (G.hintT > 0) { G.hintT -= 1 / 60; if (G.hintT <= 0) hideHint(); }
 }
 function updateCooldownHud() {
   const me = G.player;
@@ -289,7 +300,7 @@ function digest(victim) {
 function releaseBelly(chefe) {
   for (const e of G.entities) if (e.swallowed && e.alive) { e.swallowed = false; e.x = chefe.x + (Math.random() - .5) * 60; e.y = chefe.y + (Math.random() - .5) * 40; if (!canStand(e.x, e.y, e.rad)) { e.x = chefe.x; e.y = chefe.y; } if (e === G.player) toast('Você foi libertado da barriga do CHEFE!'); }
 }
-function becomeGhost(msg) { toast(msg); $('ghost-note').classList.remove('hidden'); $('prompt').classList.add('hidden'); G.player.speed = 260; }
+function becomeGhost(msg) { hideHint(); toast(msg); $('ghost-note').classList.remove('hidden'); $('prompt').classList.add('hidden'); G.player.speed = 260; }
 
 // ---------- Missões ----------
 function completeTask(e, t) {
@@ -320,6 +331,8 @@ function openMinigame(def, onDone) {
 }
 function closeMinigame() { const body = $('mg-body'); if (body._cleanup) { try { body._cleanup(); } catch (e) { } } $('minigame').classList.add('hidden'); body.innerHTML = ''; G.inMinigame = false; _mgDone = null; }
 $('mg-close').addEventListener('click', closeMinigame);
+function showHint(msg) { const h = $('hint'); h.textContent = msg; h.classList.remove('hidden'); }
+function hideHint() { $('hint').classList.add('hidden'); }
 let toastT = null;
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.add('hidden'), 2600); }
 
@@ -361,6 +374,8 @@ $('btn-restart').addEventListener('click', () => { G.paused = false; $('menu').c
 $('btn-again').addEventListener('click', () => { $('win').classList.add('hidden'); $('hud').classList.add('hidden'); $('start').classList.remove('hidden'); G.phase = 'start'; });
 $('btn-sound').addEventListener('click', () => { const on = SFX.toggle(); $('btn-sound').textContent = on ? '🔊' : '🔇'; });
 $('btn-play').addEventListener('click', () => { SFX.unlock(); newGame(); });
+$('btn-how').addEventListener('click', () => { $('how').classList.remove('hidden'); });
+$('btn-how-close').addEventListener('click', () => { $('how').classList.add('hidden'); });
 $('players-range').addEventListener('input', e => { $('players-val').textContent = e.target.value; });
 
 // ---------- Desenho ----------

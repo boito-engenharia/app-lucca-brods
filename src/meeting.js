@@ -6,7 +6,7 @@ const M = { active: false, phase: 'talk', timer: 0, votes: new Map(), info: null
 function startMeeting(info) {
   if (G.phase !== 'play' || M.active) return;
   M.active = true; M.info = info; M.votes = new Map(); M.suspicion = new Map(); M.accusations = []; M.playerVoted = false; M.talkTimers = [];
-  closeMinigame(); G.phase = 'meeting'; SFX.play('alarm');
+  closeMinigame(); hideHint(); $('prompt2').classList.add('hidden'); G.phase = 'meeting'; SFX.play('alarm');
   // onde cada um estava
   for (const e of G.entities) { const r = roomAt(e.x, e.y); e.roomAtMeeting = r ? r.id : null; }
   // teleporta os vivos para o Salão
