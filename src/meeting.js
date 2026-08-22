@@ -6,7 +6,7 @@ const M = { active: false, phase: 'talk', timer: 0, votes: new Map(), info: null
 function startMeeting(info) {
   if (G.phase !== 'play' || M.active) return;
   M.active = true; M.info = info; M.votes = new Map(); M.suspicion = new Map(); M.accusations = []; M.playerVoted = false; M.talkTimers = [];
-  closeMinigame(); hideHint(); $('prompt2').classList.add('hidden'); G.phase = 'meeting'; SFX.play('alarm');
+  closeMinigame(); hideHint(); $('prompt2').classList.add('hidden'); G.phase = 'meeting'; SFX.play('alarm'); MUSIC.setMood('meeting');
   // onde cada um estava
   for (const e of G.entities) { const r = roomAt(e.x, e.y); e.roomAtMeeting = r ? r.id : null; }
   // teleporta os vivos para o Salão
@@ -31,7 +31,7 @@ function startMeeting(info) {
 function updateTimer() { $('meet-timer').textContent = M.timer; }
 function meetTick() {
   M.timer--; updateTimer();
-  if (M.phase === 'talk' && M.timer <= 0) { M.phase = 'vote'; M.timer = SETTINGS.voteTime; $('meet-status').textContent = alive(G.player) ? 'VOTAÇÃO — toque em alguém ou pule' : 'VOTAÇÃO'; $('btn-skip').disabled = !alive(G.player); SFX.play('drum'); renderMeetPlayers(); scheduleBotVotes(); }
+  if (M.phase === 'talk' && M.timer <= 0) { M.phase = 'vote'; M.timer = SETTINGS.voteTime; $('meet-status').textContent = alive(G.player) ? 'VOTAÇÃO — toque em alguém ou pule' : 'VOTAÇÃO'; $('btn-skip').disabled = !alive(G.player); SFX.play('drum'); MUSIC.setMood('vote'); renderMeetPlayers(); scheduleBotVotes(); }
   else if (M.phase === 'vote') {
     const voters = G.entities.filter(e => alive(e)); const allVoted = voters.every(e => M.votes.has(e.id));
     if (M.timer <= 0 || allVoted) { clearInterval(M.interval); M.interval = null; finishVote(); }
@@ -160,7 +160,7 @@ function finishVote() {
       if (ejected.kind === 'chefe') releaseBelly(ejected);
       if (ejected === G.player) becomeGhost('Você foi expulso!');
     }
-    G.phase = 'play';
+    G.phase = 'play'; MUSIC.setMood(roleMood());
     checkWin();
   });
 }

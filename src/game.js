@@ -28,8 +28,11 @@ const SFX = (() => {
     drum: () => { noise(.12, .2); tone(70, .2, 'sine', .2, -30); },
     eject: () => tone(600, .6, 'sine', .08, -500),
     teleport: () => { tone(300, .2, 'sine', .08, 900); },
+    door: () => { if (!enabled || !ctx) return; const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.setValueAtTime(160 + Math.random() * 60, ctx.currentTime); o.frequency.linearRampToValueAtTime(110, ctx.currentTime + .4); f.type = 'lowpass'; f.frequency.value = 900; g.gain.setValueAtTime(.04, ctx.currentTime); g.gain.linearRampToValueAtTime(.0001, ctx.currentTime + .45); o.connect(f); f.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + .5); },
+    bell: () => { [880, 1320, 1760].forEach((f, i) => tone(f, 1.2 - i * .2, 'sine', .06 / (i + 1))); },
+    ghost: () => { tone(520, .8, 'sine', .05, -300); },
   };
-  return { unlock: ensure, tone, play: (n) => { ensure(); if (lib[n]) lib[n](); }, toggle: () => { enabled = !enabled; return enabled; }, get enabled() { return enabled; } };
+  return { unlock: ensure, tone, play: (n) => { ensure(); if (lib[n]) lib[n](); }, toggle: () => { enabled = !enabled; MUSIC.setEnabled(enabled); return enabled; }, get enabled() { return enabled; } };
 })();
 
 // ---------- Sprites ----------
@@ -169,8 +172,9 @@ function newGame() {
     : myRole === 'demom' ? `Chegue perto de alguém sozinho e aperte ${K('Q', 'MATAR')}<br>Espere a recarga · fuja pelas passagens secretas (${K('E', 'USAR')})<br>Na reunião: minta e acuse!`
     : `Chegue bem perto de alguém e aperte ${K('Q', 'ENGOLIR')}<br>Ele fica 60 s na sua barriga — não seja expulso!<br>Pode engolir até o DEMOM`;
   $('reveal').classList.remove('hidden'); SFX.play(myRole === 'venus' ? 'ok' : 'kill');
-  setTimeout(() => { $('reveal').classList.add('hidden'); G.phase = 'play'; $('hud').classList.remove('hidden'); setupHud(); G.hintT = 40; showHint(myRole === 'venus' ? 'Siga as estações amarelas e aperte E pra fazer a missão. Viu um corpo? Aperte R.' : myRole === 'demom' ? 'Você parece um VENUS. Chegue perto de alguém sozinho e aperte Q pra MATAR (recarga: 12 s).' : 'Você parece um VENUS. Chegue bem perto de alguém e aperte Q pra ENGOLIR (recarga: 12 s).'); }, 5200);
+  setTimeout(() => { $('reveal').classList.add('hidden'); G.phase = 'play'; $('hud').classList.remove('hidden'); setupHud(); G.hintT = 40; MUSIC.setMood(roleMood()); showHint(myRole === 'venus' ? 'Siga as estações amarelas e aperte E pra fazer a missão. Viu um corpo? Aperte R.' : myRole === 'demom' ? 'Você parece um VENUS. Chegue perto de alguém sozinho e aperte Q pra MATAR (recarga: 12 s).' : 'Você parece um VENUS. Chegue bem perto de alguém e aperte Q pra ENGOLIR (recarga: 12 s).'); }, 5200);
 }
+function roleMood() { const me = G.player; if (!me) return 'menu'; if (!me.alive) return 'dark'; if (G.dark) return 'tense'; return me.kind === 'venus' ? 'calm' : 'villain'; }
 function pickTasks(n) {
   const pool = TASKS.slice(); const out = []; const usedRooms = new Set();
   while (out.length < n && pool.length) {
@@ -203,7 +207,7 @@ function update(dt) {
   const vw = canvas.width / G.cam.zoom, vh = canvas.height / G.cam.zoom;
   let cx = Math.max(vw / 2 - 60, Math.min(WORLD.w - vw / 2 + 60, me.x)), cy = Math.max(vh / 2 - 60, Math.min(WORLD.h - vh / 2 + 60, me.y));
   G.cam.x += (cx - G.cam.x) * Math.min(1, dt * 8); G.cam.y += (cy - G.cam.y) * Math.min(1, dt * 8);
-  const r = roomAt(me.x, me.y); if (r !== G.room) { G.room = r; $('room-name').textContent = r ? r.name : 'Corredor'; }
+  const r = roomAt(me.x, me.y); if (r !== G.room) { if (r && G.room !== undefined && me.alive) SFX.play('door'); G.room = r; $('room-name').textContent = r ? r.name : 'Corredor'; }
   if (r) me.lastRoom = r.id;
   // cooldowns e timers
   G.meetingCd = Math.max(0, G.meetingCd - dt);
@@ -300,7 +304,7 @@ function digest(victim) {
 function releaseBelly(chefe) {
   for (const e of G.entities) if (e.swallowed && e.alive) { e.swallowed = false; e.x = chefe.x + (Math.random() - .5) * 60; e.y = chefe.y + (Math.random() - .5) * 40; if (!canStand(e.x, e.y, e.rad)) { e.x = chefe.x; e.y = chefe.y; } if (e === G.player) toast('Você foi libertado da barriga do CHEFE!'); }
 }
-function becomeGhost(msg) { hideHint(); toast(msg); $('ghost-note').classList.remove('hidden'); $('prompt').classList.add('hidden'); G.player.speed = 260; }
+function becomeGhost(msg) { hideHint(); SFX.play('ghost'); MUSIC.setMood('dark'); toast(msg); $('ghost-note').classList.remove('hidden'); $('prompt').classList.add('hidden'); G.player.speed = 260; }
 
 // ---------- Missões ----------
 function completeTask(e, t) {
@@ -352,7 +356,7 @@ function endGame(winner) {
   if (G.phase === 'end') return;
   G.phase = 'end'; closeMinigame(); $('meeting').classList.add('hidden'); $('eject').classList.add('hidden');
   const me = G.player; const iWon = me.kind === winner;
-  SFX.play(iWon ? 'win' : 'lose');
+  MUSIC.stop(); SFX.play(iWon ? 'win' : 'lose');
   const names = { venus: 'VENUS VENCERAM!', demom: 'O DEMOM VENCEU!', chefe: 'O CHEFE VENCEU!' };
   $('win-title').textContent = names[winner]; $('win-title').className = winner;
   $('win-sub').textContent = iWon ? '🎉 Você venceu!' : 'Você perdeu desta vez…';
@@ -371,10 +375,10 @@ function togglePause() { G.paused = !G.paused; $('menu').classList.toggle('hidde
 $('btn-menu').addEventListener('click', () => { if (G.phase === 'play') togglePause(); });
 $('btn-resume').addEventListener('click', togglePause);
 $('btn-restart').addEventListener('click', () => { G.paused = false; $('menu').classList.add('hidden'); $('hud').classList.add('hidden'); $('start').classList.remove('hidden'); G.phase = 'start'; });
-$('btn-again').addEventListener('click', () => { $('win').classList.add('hidden'); $('hud').classList.add('hidden'); $('start').classList.remove('hidden'); G.phase = 'start'; });
+$('btn-again').addEventListener('click', () => { MUSIC.setMood('menu'); $('win').classList.add('hidden'); $('hud').classList.add('hidden'); $('start').classList.remove('hidden'); G.phase = 'start'; });
 $('btn-sound').addEventListener('click', () => { const on = SFX.toggle(); $('btn-sound').textContent = on ? '🔊' : '🔇'; });
-$('btn-play').addEventListener('click', () => { SFX.unlock(); newGame(); });
-$('btn-how').addEventListener('click', () => { $('how').classList.remove('hidden'); });
+$('btn-play').addEventListener('click', () => { SFX.unlock(); MUSIC.setMood('menu'); newGame(); });
+$('btn-how').addEventListener('click', () => { SFX.unlock(); MUSIC.setMood('menu'); $('how').classList.remove('hidden'); });
 $('btn-how-close').addEventListener('click', () => { $('how').classList.add('hidden'); });
 $('players-range').addEventListener('input', e => { $('players-val').textContent = e.target.value; });
 
