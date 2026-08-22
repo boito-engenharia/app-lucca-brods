@@ -275,6 +275,12 @@ body.touch #sab-banner{top:auto;bottom:2%;font-size:12px}
 .sab-btn small{font-size:11px;color:var(--muted);font-weight:700;line-height:1.3}
 @media (max-width:600px){.sab-grid{grid-template-columns:1fr}}
 
+/* ===== cômodos especiais ===== */
+.book-row{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:3px solid #000;border-radius:12px;padding:8px;margin:6px 0}
+.book-row canvas{flex:none;border-radius:8px;background:rgba(0,0,0,.3)}
+.book-txt{flex:1;font-size:13px;line-height:1.5;font-weight:700}
+.book-say{margin-top:6px;padding:6px 8px;background:rgba(120,120,200,.2);border-radius:8px;font-style:italic}
+
 </style>
 </head>
 <body>
@@ -1242,7 +1248,7 @@ function newGame() {
   for (const e of ents) { e.tasks = pickTasks(SETTINGS.tasksPerVenus).map(t => ({ id: t.id, done: false })); if (e.kind !== 'venus') e.killCd = 12; }
   // posições iniciais em círculo no Salão
   ents.forEach((e, i) => { const a = (i / ents.length) * Math.PI * 2; e.x = 1020 + Math.cos(a) * 120; e.y = 620 + Math.sin(a) * 90; });
-  G.entities = ents; G.player = me; G.bodies = []; G.result = null; SAB.active = null; SAB.blocked = []; $('sab-banner').classList.add('hidden');
+  G.entities = ents; G.player = me; G.bodies = []; G.result = null; SAB.active = null; SAB.blocked = []; $('sab-banner').classList.add('hidden'); specialsReset();
   G.emergenciesLeft = SETTINGS.emergencyPerPlayer; G.meetingCd = 10;
   G.t = 0; G.last = performance.now(); G.paused = false; G.inMinigame = false; G.dark = false; G.room = null;
   G.cam.x = me.x; G.cam.y = me.y;
@@ -1286,7 +1292,7 @@ function update(dt) {
   if (keys['arrowleft'] || keys['a']) ax -= 1; if (keys['arrowright'] || keys['d']) ax += 1;
   if (keys['arrowup'] || keys['w']) ay -= 1; if (keys['arrowdown'] || keys['s']) ay += 1;
   if (joy.active) { ax += joy.dx; ay += joy.dy; }
-  if (!me.swallowed) {
+  if (!me.swallowed && !me.jailed) {
     const wasMoving = me.moving; moveEntity(me, ax, ay, dt);
     if (me.moving && Math.floor(me.anim) !== Math.floor(me.anim - dt * 10) && Math.floor(me.anim) % 2 === 0 && !me.ghost) SFX.play('step');
   }
@@ -1301,7 +1307,7 @@ function update(dt) {
   for (const e of G.entities) { if (e.killCd > 0) e.killCd -= dt; if (e.revealT > 0) e.revealT -= dt; }
   // digestão
   for (const e of G.entities) if (e.swallowed && e.alive) { e.swallowT -= dt; if (e.swallowT <= 0) digest(e); }
-  sabUpdate(dt);
+  sabUpdate(dt); specialsUpdate(dt);
   // bots
   for (const e of G.entities) if (e.isBot && alive(e)) aiUpdate(e, dt);
   aiNoticeBodies(dt);
@@ -1316,6 +1322,7 @@ function updatePlayerNear() {
     // estação de missão própria
     let best = 70;
     for (const t of me.tasks) { if (t.done) continue; const p = taskPos(TASK_BY_ID[t.id]); const d = Math.hypot(p.x - me.x, p.y - me.y); if (d < best) { best = d; near = { type: 'task', task: t, def: TASK_BY_ID[t.id], name: TASK_BY_ID[t.id].name }; } }
+    if (!near) for (const sp of SPECIALS) { if (Math.hypot(sp.x - me.x, sp.y - me.y) < 60) { const label = specialAvailable(sp); if (label) near = { type: 'special', sp, name: label }; } }
     if (!near && SAB.active && SAB.active.type === 'lights' && me.kind !== 'demom' && Math.hypot(SAB.POWER.x - me.x, SAB.POWER.y - me.y) < 70) near = { type: 'power', name: 'Religar as luzes' };
     if (!near && Math.hypot(EMERGENCY.x - me.x, EMERGENCY.y - me.y) < 60) near = { type: 'emergency', name: SAB.active ? 'Botão travado (sabotagem)' : G.emergenciesLeft > 0 ? 'Botão de emergência' : 'Sem emergências' };
     if (!near && me.kind !== 'venus') for (const s of SECRET) { if (Math.hypot(s.ax - me.x, s.ay - me.y) < 50) near = { type: 'secret', to: { x: s.bx, y: s.by }, name: 'Passagem secreta' }; if (Math.hypot(s.bx - me.x, s.by - me.y) < 50) near = { type: 'secret', to: { x: s.ax, y: s.ay }, name: 'Passagem secreta' }; }
@@ -1351,6 +1358,7 @@ function playerUse() {
   if (G.phase !== 'play' || G.paused || G.inMinigame) return;
   const me = G.player, n = G.near; if (!n || !alive(me)) return;
   if (n.type === 'task') openMinigame(n.def, () => completeTask(me, n.task));
+  else if (n.type === 'special') { if (n.sp.id === 'eyes' && SP.eyesCd > 0) return; useSpecial(n.sp); }
   else if (n.type === 'power') openMinigame({ icon: '⚡', name: 'Religar a caixa de força', game: 'toggleAll', p: { n: 6 } }, () => endSabotage('💡 As luzes voltaram!'));
   else if (n.type === 'emergency') { if (SAB.active) { toast('O botão não funciona durante a sabotagem!'); return; } if (G.emergenciesLeft > 0 && G.meetingCd <= 0) { G.emergenciesLeft--; startMeeting({ type: 'emergency', reporter: me }); } else toast(G.meetingCd > 0 ? 'Espere um pouco para usar o botão' : 'Você já usou sua emergência'); }
   else if (n.type === 'secret') { me.x = n.to.x; me.y = n.to.y; SFX.play('teleport'); }
@@ -1370,6 +1378,8 @@ function onKey(e) {
 function killEntity(killer, victim) {
   if (!alive(victim)) return;
   killer.killCd = SETTINGS.killCooldown; killer.revealT = 1.1;
+  if (victim.shield) { victim.shield = false; SFX.play('bad'); if (victim === G.player) { toast('🧪 A Poção de Escudo te salvou!'); G.medalShield = true; } return; }
+  recordDeath(victim, killer);
   victim.alive = false; victim.ghost = true; victim.moving = false;
   G.bodies.push({ x: victim.x, y: victim.y, ent: victim, t: G.t, room: roomAt(victim.x, victim.y) });
   SFX.play('kill');
@@ -1381,6 +1391,8 @@ function killEntity(killer, victim) {
 function swallowEntity(chefe, victim) {
   if (!alive(victim)) return;
   chefe.killCd = SETTINGS.swallowCooldown; chefe.revealT = 1.1;
+  if (victim.shield) { victim.shield = false; SFX.play('bad'); if (victim === G.player) { toast('🧪 A Poção de Escudo te salvou do CHEFE!'); G.medalShield = true; } return; }
+  recordDeath(victim, chefe); G.swallowCount = (G.swallowCount || 0) + (chefe === G.player ? 1 : 0);
   victim.swallowed = true; victim.swallowT = SETTINGS.digestTime; victim.moving = false;
   SFX.play('swallow');
   if (victim === G.player) { toast('O CHEFE engoliu você! Se ele for expulso ou morto em 60 s, você sai vivo…'); }
@@ -1486,7 +1498,7 @@ window.addEventListener('resize', resize); resize();
 function drawEntity(e) {
   const me = G.player;
   if (e.swallowed) return;
-  if (!e.alive) { if (e !== me && !me.ghost) return; }           // fantasmas só aparecem pra quem é fantasma
+  if (!e.alive && !e.jailed) { if (e !== me && !me.ghost) return; }   // fantasmas só aparecem pra quem é fantasma
   const trueForm = (e === me && e.kind !== 'venus') || e.revealT > 0;
   const S = spritesFor(e, trueForm);
   let img = S.front, flip = false;
@@ -1495,15 +1507,15 @@ function drawEntity(e) {
   const H = 64, W = img.width * (H / img.height);
   const bob = e.moving ? Math.abs(Math.sin(e.anim * 1.2)) * 5 : 0, tilt = e.moving ? Math.sin(e.anim * 1.2) * .08 : 0;
   ctx.save();
-  if (!e.alive) { ctx.globalAlpha = .55; }
+  if (!e.alive && !e.jailed) { ctx.globalAlpha = .55; }
   else { ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 4, 18, 8, 0, 0, 7); ctx.fill(); }
-  const floatY = e.alive ? 0 : Math.sin(G.t * 2 + e.id) * 6 - 14;
+  const floatY = (e.alive || e.jailed) ? 0 : Math.sin(G.t * 2 + e.id) * 6 - 14;
   ctx.translate(e.x, e.y - bob + floatY); ctx.rotate(tilt); if (flip) ctx.scale(-1, 1);
   if (e.revealT > 0 && e.kind !== 'venus') { ctx.shadowColor = e.kind === 'demom' ? '#ff1a1a' : '#b98cff'; ctx.shadowBlur = 30; }
   ctx.drawImage(img, -W / 2, -H + 6, W, H);
   ctx.restore();
   // nome
-  ctx.font = '900 13px Trebuchet MS, Arial'; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = '#000'; ctx.strokeText(e.name, e.x, e.y - H - 2 + floatY); ctx.fillStyle = e === me ? '#fff' : e.color.css; ctx.fillText(e.name, e.x, e.y - H - 2 + floatY);
+  ctx.font = '900 13px Trebuchet MS, Arial'; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = '#000'; ctx.strokeText(e.name, e.x, e.y - H - 2 + floatY); ctx.fillStyle = e === me ? '#fff' : e.color.css; ctx.fillText(e.name + (e.shield ? ' 🟣' : '') + (e.jailed ? ' 🔒' : ''), e.x, e.y - H - 2 + floatY);
   // barriga do chefe (visível só pra ele mesmo)
   if (e === me && e.kind === 'chefe') { const n = G.entities.filter(z => z.swallowed && z.alive).length; if (n) { ctx.fillStyle = '#b98cff'; ctx.beginPath(); ctx.arc(e.x + 22, e.y - 50, 11, 0, 7); ctx.fill(); ctx.fillStyle = '#000'; ctx.font = '900 13px Arial'; ctx.fillText(String(n), e.x + 22, e.y - 45); } }
 }
@@ -1516,7 +1528,7 @@ function drawBody(b) {
 function render() {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
   const z = G.cam.zoom; ctx.setTransform(z, 0, 0, z, canvas.width / 2 - G.cam.x * z, canvas.height / 2 - G.cam.y * z); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-  drawMap();
+  drawMap(); drawSpecials();
   for (const b of G.bodies) drawBody(b);
   const ents = G.entities.slice().sort((a, b) => a.y - b.y);
   for (const e of ents) drawEntity(e);
@@ -1793,6 +1805,147 @@ function aiOnSabotage(type) {
   for (const b of bots) { b.ai.sabTask = type; aiGoto(b, { x: target.x + (Math.random() - .5) * 40, y: target.y + (Math.random() - .5) * 30 }); b.ai.state = 'goto'; }
 }
 
+// ===== BRODS — cômodos especiais =====
+'use strict';
+
+const SPECIALS = [
+  { id: 'book',   room: 'cozinha',     x: 2200, y: 630,  icon: '📖', name: 'Livro dos Mortos',        color: '185,140,255' },
+  { id: 'eyes',   room: 'galeria',     x: 1700, y: 250,  icon: '👁️', name: 'Olhos dos quadros',       color: '255,120,120' },
+  { id: 'potion', room: 'laboratorio', x: 1850, y: 1110, icon: '🧪', name: 'Poção de Escudo',         color: '120,255,200' },
+  { id: 'altar',  room: 'capela',      x: 870,  y: 1000, icon: '✨', name: 'Altar da Segunda Chance', color: '255,230,120' },
+  { id: 'cage',   room: 'porao',       x: 300,  y: 1160, icon: '🔒', name: 'Jaula',                   color: '200,200,220' },
+];
+const SP = { eyesCd: 0, potionUsed: false, altarUsed: false, bookReads: 0 };
+const CAGE_POS = { x: 310, y: 1165 };
+
+function specialsReset() { SP.eyesCd = 0; SP.potionUsed = false; SP.altarUsed = false; SP.bookReads = 0; }
+function specialAvailable(sp) {
+  const me = G.player;
+  if (sp.id === 'book') return G.entities.some(e => !e.alive && !e.jailed) ? 'Ler o Livro dos Mortos' : null;
+  if (sp.id === 'eyes') return SP.eyesCd <= 0 ? 'Olhar os quadros' : `Os quadros descansam (${Math.ceil(SP.eyesCd)}s)`;
+  if (sp.id === 'potion') return SP.potionUsed ? null : me.shield ? null : 'Beber a Poção de Escudo';
+  if (sp.id === 'altar') return (!SP.altarUsed && me.kind === 'venus' && G.entities.some(e => !e.alive && !e.jailed && !e.swallowed)) ? 'Usar o Altar (reviver 1)' : null;
+  if (sp.id === 'cage') { const j = G.entities.find(e => e.jailed); return (j && me.kind === 'venus') ? `Soltar ${j.name} da Jaula (missão)` : null; }
+  return null;
+}
+function specialsUpdate(dt) {
+  if (SP.eyesCd > 0) SP.eyesCd -= dt;
+  // histórico de cômodos (a cada 5 s)
+  G.histT = (G.histT || 0) + dt;
+  if (G.histT >= 5) { G.histT = 0; for (const e of G.entities) { if (!alive(e)) continue; const r = roomAt(e.x, e.y); e.hist = e.hist || []; e.hist.push(r ? r.id : null); if (e.hist.length > 8) e.hist.shift(); } }
+}
+function recordDeath(victim, killer) {
+  const r = roomAt(victim.x, victim.y);
+  const near = G.entities.filter(o => o !== victim && alive(o) && Math.hypot(o.x - victim.x, o.y - victim.y) < 350);
+  victim.deathInfo = { room: r ? r.name : 'corredor', near: near.map(o => o.name), killer: killer ? killer.name : null, tasksDone: victim.tasks.filter(t => t.done).length, hist: (victim.hist || []).slice(-4), t: G.t };
+}
+
+function useSpecial(sp) {
+  const me = G.player;
+  if (sp.id === 'book') openBook();
+  else if (sp.id === 'eyes') openEyes();
+  else if (sp.id === 'potion') { SP.potionUsed = true; me.shield = true; SFX.play('ok'); toast('🧪 Você bebeu a Poção de Escudo! O próximo ataque contra você falha (mas sua boca ficou roxa…)'); }
+  else if (sp.id === 'altar') openAltar();
+  else if (sp.id === 'cage') { const j = G.entities.find(e => e.jailed); if (j) openMinigame({ icon: '🔒', name: 'Abrir a Jaula', game: 'toggleAll', p: { n: 5 } }, () => releaseJailed(j)); }
+}
+
+// ---------- Livro dos Mortos ----------
+function openBook() {
+  const me = G.player; const chefe = G.entities.find(e => e.kind === 'chefe' && alive(e) && e.isBot);
+  // risco: o CHEFE na cozinha engole na hora
+  if (chefe && Math.hypot(chefe.x - me.x, chefe.y - me.y) < 380 && me.kind !== 'chefe') { swallowEntity(chefe, me); toast('😱 O CHEFE estava na Cozinha e te engoliu!'); return; }
+  G.inMinigame = true; SFX.play('open'); SP.bookReads++;
+  const body = $('mg-body'); body.innerHTML = ''; body._cleanup = null; $('mg-title').textContent = '📖 Livro dos Mortos';
+  body.appendChild(el('p', 'mg-instr', 'As páginas mostram quem já morreu. Toque em "Entrevistar" para ouvir a alma por 60 segundos.'));
+  const dead = G.entities.filter(e => !e.alive && !e.jailed);
+  for (const d of dead) {
+    const row = el('div', 'book-row');
+    const av = document.createElement('canvas'); av.width = 120; av.height = 70; const x = av.getContext('2d'); const S = spritesFor(d, false); const img = S.dead || S.front; if (img) { const w = 110, h = img.height * (w / img.width); x.drawImage(img, 5, 70 - h, w, h); }
+    row.appendChild(av);
+    const info = d.deathInfo || { room: '?', near: [], tasksDone: 0, hist: [] };
+    const txt = el('div', 'book-txt', `<b style="color:${d.color.css}">${d.name}</b><br>${d.digested ? 'Digerido pelo CHEFE' : d.ejected ? 'Expulso' : 'Morto'} ${info.room ? 'em: ' + info.room : ''}<br>Missões feitas: ${info.tasksDone}<br>Esteve em: ${(info.hist || []).filter(Boolean).map(id => ROOM_BY_ID[id].name).join(' → ') || '?'}`);
+    row.appendChild(txt);
+    const b = el('button', 'small-btn', 'Entrevistar'); b.onclick = () => { b.disabled = true; const lines = ghostLines(d); const box = el('div', 'book-say'); txt.appendChild(box); let i = 0; const show = () => { if (i < lines.length) { const p = el('div', '', '👻 ' + lines[i++]); box.appendChild(p); setTimeout(show, 1400); } }; show(); };
+    row.appendChild(b); body.appendChild(row);
+  }
+  let left = 60; const tm = el('div', 'mg-code', '60 s'); body.appendChild(tm);
+  const t = setInterval(() => { left--; tm.textContent = left + ' s'; if (left <= 0) { clearInterval(t); closeMinigame(); } }, 1000);
+  body._cleanup = () => clearInterval(t);
+  $('minigame').classList.remove('hidden');
+}
+function ghostLines(d) {
+  const info = d.deathInfo; if (!info) return ['Não lembro de nada…'];
+  const L = [];
+  L.push(`Quando morri eu estava em: ${info.room}.`);
+  if (info.near.length) { const names = info.near.filter(n => n !== info.killer); const showKiller = info.killer && Math.random() < .6; const list = [...names]; if (showKiller) list.push(info.killer); if (list.length) L.push(`Perto de mim estavam: ${list.join(', ')}.`); else L.push('Tinha alguém por perto, mas não vi direito quem era…'); if (info.killer && !showKiller) L.push('Quem me atacou veio por trás… não vi o rosto.'); }
+  else L.push('Eu estava sozinho. Quem me pegou foi rápido demais…');
+  if (d.ejected) L.splice(0, L.length, 'Vocês me expulsaram! Eu era inocente…');
+  return L;
+}
+
+// ---------- Olhos da Galeria ----------
+function openEyes() {
+  G.inMinigame = true; SFX.play('open'); SP.eyesCd = 45;
+  const body = $('mg-body'); body.innerHTML = ''; body._cleanup = null; $('mg-title').textContent = '👁️ Os quadros viram tudo';
+  body.appendChild(el('p', 'mg-instr', 'Os olhos dos quadros contam por onde cada um passou nos últimos instantes. Mas cuidado: UM dos quadros mente.'));
+  const others = G.entities.filter(e => e !== G.player && alive(e));
+  const liar = others[Math.floor(Math.random() * others.length)];
+  for (const e of others) {
+    let rooms = (e.hist || []).slice(-5).filter(Boolean).map(id => ROOM_BY_ID[id].name);
+    const cur = roomAt(e.x, e.y); if (cur) rooms.push(cur.name);
+    rooms = rooms.filter((r, i, a) => i === 0 || r !== a[i - 1]);
+    if (e === liar) { const fake = ROOMS[Math.floor(Math.random() * ROOMS.length)].name; rooms = rooms.length ? [fake, ...rooms.slice(1)] : [fake]; }
+    const row = el('div', 'book-row');
+    const av = avatarCanvas(e, false); av.style.width = '40px'; av.style.height = '40px'; row.appendChild(av);
+    row.appendChild(el('div', 'book-txt', `<b style="color:${e.color.css}">${e.name}</b>: ${rooms.join(' → ') || 'ninguém viu'}`));
+    body.appendChild(row);
+  }
+  $('minigame').classList.remove('hidden');
+}
+
+// ---------- Altar ----------
+function openAltar() {
+  G.inMinigame = true; SFX.play('open');
+  const body = $('mg-body'); body.innerHTML = ''; body._cleanup = null; $('mg-title').textContent = '✨ Altar da Segunda Chance';
+  body.appendChild(el('p', 'mg-instr', 'Escolha UMA alma para trazer de volta. O sino vai tocar e a mansão inteira vai ouvir…'));
+  const row = el('div', 'mg-row'); body.appendChild(row);
+  for (const d of G.entities.filter(e => !e.alive && !e.jailed && !e.swallowed)) {
+    const b = el('button', 'small-btn', d.name); b.style.background = d.color.css; b.onclick = () => { revive(d); closeMinigame(); }; row.appendChild(b);
+  }
+  $('minigame').classList.remove('hidden');
+}
+function revive(d) {
+  SP.altarUsed = true; d.alive = true; d.ghost = false; d.digested = false; d.swallowed = false; d.x = 870; d.y = 1060; d.speed = d.isBot ? SETTINGS.botSpeed : SETTINGS.playerSpeed;
+  if (d.isBot) { d.ai.state = 'idle'; d.ai.wait = 1; d.ai.witness = null; } else { $('ghost-note').classList.add('hidden'); toast('Você voltou à vida!'); }
+  G.bodies = G.bodies.filter(b => b.ent !== d);
+  SFX.play('bell'); toast(`✨ ${d.name} voltou à vida! O sino tocou na Capela…`); renderTaskList();
+  // vilões ouvem o sino e vão até a Capela
+  for (const e of G.entities) if (e.isBot && alive(e) && e.kind !== 'venus') { aiGoto(e, { x: 800, y: 1100 }); e.ai.state = 'goto'; }
+  if (G.player.kind !== 'venus') toast('🔔 O sino tocou na Capela! Alguém usou o Altar…');
+}
+
+// ---------- Jaula ----------
+function jailEntity(e) { e.jailed = true; e.alive = false; e.ghost = false; e.moving = false; e.x = CAGE_POS.x + (Math.random() - .5) * 40; e.y = CAGE_POS.y + (Math.random() - .5) * 20; }
+function releaseJailed(e) {
+  e.jailed = false; e.alive = true; e.ghost = false; e.ejected = false; e.x = 300; e.y = 1050;
+  if (e.isBot) { e.ai.state = 'idle'; e.ai.wait = 1; } else { $('ghost-note').classList.add('hidden'); toast('Você foi solto da Jaula!'); }
+  SFX.play('ok'); toast(`🔓 ${e.name} foi solto da Jaula!`); renderTaskList(); checkWin();
+}
+
+// ---------- Desenho ----------
+function drawSpecials() {
+  for (const sp of SPECIALS) {
+    const pulse = (Math.sin(G.t * 3 + sp.x) + 1) / 2;
+    ctx.fillStyle = `rgba(${sp.color},${.18 + .18 * pulse})`; ctx.beginPath(); ctx.arc(sp.x, sp.y, 28 + pulse * 3, 0, 7); ctx.fill();
+    ctx.strokeStyle = `rgba(${sp.color},.9)`; ctx.lineWidth = 3; ctx.stroke();
+    ctx.font = '24px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.fillText(sp.icon, sp.x, sp.y + 1); ctx.textBaseline = 'alphabetic';
+    ctx.font = '900 11px Nunito, Arial'; ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillText(sp.name.toUpperCase(), sp.x, sp.y + 44);
+  }
+  // jaula: barras por cima dos presos
+  const jailed = G.entities.filter(e => e.jailed);
+  if (jailed.length) { ctx.strokeStyle = '#bbb'; ctx.lineWidth = 4; for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(CAGE_POS.x + i * 16, CAGE_POS.y - 70); ctx.lineTo(CAGE_POS.x + i * 16, CAGE_POS.y + 14); ctx.stroke(); } }
+}
+
 // ===== BRODS — reunião, conversa e votação =====
 'use strict';
 
@@ -1844,7 +1997,7 @@ function renderMeetPlayers() {
   for (const e of G.entities) {
     const d = document.createElement('div'); d.className = 'mp' + (alive(e) ? '' : ' dead') + (e === me ? ' me' : '');
     d.appendChild(avatarCanvas(e, e === me && e.kind !== 'venus'));
-    const n = document.createElement('span'); n.className = 'nm'; n.textContent = e.name + (e.swallowed ? ' (na barriga)' : ''); n.style.color = e.color.css; d.appendChild(n);
+    const n = document.createElement('span'); n.className = 'nm'; n.textContent = e.name + (e.swallowed ? ' (na barriga)' : e.jailed ? ' (na jaula)' : ''); n.style.color = e.color.css; d.appendChild(n);
     if (M.info && M.info.reporter === e) { const t = document.createElement('span'); t.className = 'tag'; t.textContent = 'reportou'; d.appendChild(t); }
     const vs = document.createElement('span'); vs.className = 'votes'; for (const [vid, target] of M.votes) if (target === e.id) { const i = document.createElement('i'); const voter = G.entities.find(z => z.id === vid); i.style.background = voter ? voter.color.css : '#fff'; vs.appendChild(i); } d.appendChild(vs);
     if (M.phase === 'vote' && alive(e) && alive(me) && !M.playerVoted) { d.classList.add('votable'); d.onclick = () => castVote(me, e.id); }
@@ -1951,9 +2104,9 @@ function finishVote() {
   $('meeting').classList.add('hidden'); M.active = false;
   showEject(ejected, () => {
     if (ejected) {
-      ejected.alive = false; ejected.ghost = true; ejected.ejected = true; ejected.moving = false;
+      ejected.ejected = true; jailEntity(ejected); recordDeath(ejected, null);
       if (ejected.kind === 'chefe') releaseBelly(ejected);
-      if (ejected === G.player) becomeGhost('Você foi expulso!');
+      if (ejected === G.player) { hideHint(); toast('Você foi expulso e está na Jaula do Porão. Se os VENUS perceberem o erro, podem te soltar…'); $('ghost-note').textContent = '🔒 Você está na Jaula. Só observa — a menos que alguém te solte.'; $('ghost-note').classList.remove('hidden'); MUSIC.setMood('dark'); }
     }
     G.phase = 'play'; MUSIC.setMood(roleMood());
     checkWin();

@@ -31,7 +31,7 @@ if os.path.isdir(COM):
 
 html = read(os.path.join(SRC, 'index.html'))
 css = read(os.path.join(SRC, 'style.css'))
-js_parts = [read(os.path.join(SRC, n)) for n in ['data.js', 'minigames.js', 'render.js', 'game.js', 'ai.js', 'sabotage.js', 'meeting.js', 'music.js']]
+js_parts = [read(os.path.join(SRC, n)) for n in ['data.js', 'minigames.js', 'render.js', 'game.js', 'ai.js', 'sabotage.js', 'specials.js', 'meeting.js', 'music.js']]
 js = '\n'.join(js_parts)
 
 html = html.replace('/*__CSS__*/', css)

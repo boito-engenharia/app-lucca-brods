@@ -158,7 +158,7 @@ function newGame() {
   for (const e of ents) { e.tasks = pickTasks(SETTINGS.tasksPerVenus).map(t => ({ id: t.id, done: false })); if (e.kind !== 'venus') e.killCd = 12; }
   // posições iniciais em círculo no Salão
   ents.forEach((e, i) => { const a = (i / ents.length) * Math.PI * 2; e.x = 1020 + Math.cos(a) * 120; e.y = 620 + Math.sin(a) * 90; });
-  G.entities = ents; G.player = me; G.bodies = []; G.result = null; SAB.active = null; SAB.blocked = []; $('sab-banner').classList.add('hidden');
+  G.entities = ents; G.player = me; G.bodies = []; G.result = null; SAB.active = null; SAB.blocked = []; $('sab-banner').classList.add('hidden'); specialsReset();
   G.emergenciesLeft = SETTINGS.emergencyPerPlayer; G.meetingCd = 10;
   G.t = 0; G.last = performance.now(); G.paused = false; G.inMinigame = false; G.dark = false; G.room = null;
   G.cam.x = me.x; G.cam.y = me.y;
@@ -202,7 +202,7 @@ function update(dt) {
   if (keys['arrowleft'] || keys['a']) ax -= 1; if (keys['arrowright'] || keys['d']) ax += 1;
   if (keys['arrowup'] || keys['w']) ay -= 1; if (keys['arrowdown'] || keys['s']) ay += 1;
   if (joy.active) { ax += joy.dx; ay += joy.dy; }
-  if (!me.swallowed) {
+  if (!me.swallowed && !me.jailed) {
     const wasMoving = me.moving; moveEntity(me, ax, ay, dt);
     if (me.moving && Math.floor(me.anim) !== Math.floor(me.anim - dt * 10) && Math.floor(me.anim) % 2 === 0 && !me.ghost) SFX.play('step');
   }
@@ -217,7 +217,7 @@ function update(dt) {
   for (const e of G.entities) { if (e.killCd > 0) e.killCd -= dt; if (e.revealT > 0) e.revealT -= dt; }
   // digestão
   for (const e of G.entities) if (e.swallowed && e.alive) { e.swallowT -= dt; if (e.swallowT <= 0) digest(e); }
-  sabUpdate(dt);
+  sabUpdate(dt); specialsUpdate(dt);
   // bots
   for (const e of G.entities) if (e.isBot && alive(e)) aiUpdate(e, dt);
   aiNoticeBodies(dt);
@@ -232,6 +232,7 @@ function updatePlayerNear() {
     // estação de missão própria
     let best = 70;
     for (const t of me.tasks) { if (t.done) continue; const p = taskPos(TASK_BY_ID[t.id]); const d = Math.hypot(p.x - me.x, p.y - me.y); if (d < best) { best = d; near = { type: 'task', task: t, def: TASK_BY_ID[t.id], name: TASK_BY_ID[t.id].name }; } }
+    if (!near) for (const sp of SPECIALS) { if (Math.hypot(sp.x - me.x, sp.y - me.y) < 60) { const label = specialAvailable(sp); if (label) near = { type: 'special', sp, name: label }; } }
     if (!near && SAB.active && SAB.active.type === 'lights' && me.kind !== 'demom' && Math.hypot(SAB.POWER.x - me.x, SAB.POWER.y - me.y) < 70) near = { type: 'power', name: 'Religar as luzes' };
     if (!near && Math.hypot(EMERGENCY.x - me.x, EMERGENCY.y - me.y) < 60) near = { type: 'emergency', name: SAB.active ? 'Botão travado (sabotagem)' : G.emergenciesLeft > 0 ? 'Botão de emergência' : 'Sem emergências' };
     if (!near && me.kind !== 'venus') for (const s of SECRET) { if (Math.hypot(s.ax - me.x, s.ay - me.y) < 50) near = { type: 'secret', to: { x: s.bx, y: s.by }, name: 'Passagem secreta' }; if (Math.hypot(s.bx - me.x, s.by - me.y) < 50) near = { type: 'secret', to: { x: s.ax, y: s.ay }, name: 'Passagem secreta' }; }
@@ -267,6 +268,7 @@ function playerUse() {
   if (G.phase !== 'play' || G.paused || G.inMinigame) return;
   const me = G.player, n = G.near; if (!n || !alive(me)) return;
   if (n.type === 'task') openMinigame(n.def, () => completeTask(me, n.task));
+  else if (n.type === 'special') { if (n.sp.id === 'eyes' && SP.eyesCd > 0) return; useSpecial(n.sp); }
   else if (n.type === 'power') openMinigame({ icon: '⚡', name: 'Religar a caixa de força', game: 'toggleAll', p: { n: 6 } }, () => endSabotage('💡 As luzes voltaram!'));
   else if (n.type === 'emergency') { if (SAB.active) { toast('O botão não funciona durante a sabotagem!'); return; } if (G.emergenciesLeft > 0 && G.meetingCd <= 0) { G.emergenciesLeft--; startMeeting({ type: 'emergency', reporter: me }); } else toast(G.meetingCd > 0 ? 'Espere um pouco para usar o botão' : 'Você já usou sua emergência'); }
   else if (n.type === 'secret') { me.x = n.to.x; me.y = n.to.y; SFX.play('teleport'); }
@@ -286,6 +288,8 @@ function onKey(e) {
 function killEntity(killer, victim) {
   if (!alive(victim)) return;
   killer.killCd = SETTINGS.killCooldown; killer.revealT = 1.1;
+  if (victim.shield) { victim.shield = false; SFX.play('bad'); if (victim === G.player) { toast('🧪 A Poção de Escudo te salvou!'); G.medalShield = true; } return; }
+  recordDeath(victim, killer);
   victim.alive = false; victim.ghost = true; victim.moving = false;
   G.bodies.push({ x: victim.x, y: victim.y, ent: victim, t: G.t, room: roomAt(victim.x, victim.y) });
   SFX.play('kill');
@@ -297,6 +301,8 @@ function killEntity(killer, victim) {
 function swallowEntity(chefe, victim) {
   if (!alive(victim)) return;
   chefe.killCd = SETTINGS.swallowCooldown; chefe.revealT = 1.1;
+  if (victim.shield) { victim.shield = false; SFX.play('bad'); if (victim === G.player) { toast('🧪 A Poção de Escudo te salvou do CHEFE!'); G.medalShield = true; } return; }
+  recordDeath(victim, chefe); G.swallowCount = (G.swallowCount || 0) + (chefe === G.player ? 1 : 0);
   victim.swallowed = true; victim.swallowT = SETTINGS.digestTime; victim.moving = false;
   SFX.play('swallow');
   if (victim === G.player) { toast('O CHEFE engoliu você! Se ele for expulso ou morto em 60 s, você sai vivo…'); }
@@ -402,7 +408,7 @@ window.addEventListener('resize', resize); resize();
 function drawEntity(e) {
   const me = G.player;
   if (e.swallowed) return;
-  if (!e.alive) { if (e !== me && !me.ghost) return; }           // fantasmas só aparecem pra quem é fantasma
+  if (!e.alive && !e.jailed) { if (e !== me && !me.ghost) return; }   // fantasmas só aparecem pra quem é fantasma
   const trueForm = (e === me && e.kind !== 'venus') || e.revealT > 0;
   const S = spritesFor(e, trueForm);
   let img = S.front, flip = false;
@@ -411,15 +417,15 @@ function drawEntity(e) {
   const H = 64, W = img.width * (H / img.height);
   const bob = e.moving ? Math.abs(Math.sin(e.anim * 1.2)) * 5 : 0, tilt = e.moving ? Math.sin(e.anim * 1.2) * .08 : 0;
   ctx.save();
-  if (!e.alive) { ctx.globalAlpha = .55; }
+  if (!e.alive && !e.jailed) { ctx.globalAlpha = .55; }
   else { ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 4, 18, 8, 0, 0, 7); ctx.fill(); }
-  const floatY = e.alive ? 0 : Math.sin(G.t * 2 + e.id) * 6 - 14;
+  const floatY = (e.alive || e.jailed) ? 0 : Math.sin(G.t * 2 + e.id) * 6 - 14;
   ctx.translate(e.x, e.y - bob + floatY); ctx.rotate(tilt); if (flip) ctx.scale(-1, 1);
   if (e.revealT > 0 && e.kind !== 'venus') { ctx.shadowColor = e.kind === 'demom' ? '#ff1a1a' : '#b98cff'; ctx.shadowBlur = 30; }
   ctx.drawImage(img, -W / 2, -H + 6, W, H);
   ctx.restore();
   // nome
-  ctx.font = '900 13px Trebuchet MS, Arial'; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = '#000'; ctx.strokeText(e.name, e.x, e.y - H - 2 + floatY); ctx.fillStyle = e === me ? '#fff' : e.color.css; ctx.fillText(e.name, e.x, e.y - H - 2 + floatY);
+  ctx.font = '900 13px Trebuchet MS, Arial'; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = '#000'; ctx.strokeText(e.name, e.x, e.y - H - 2 + floatY); ctx.fillStyle = e === me ? '#fff' : e.color.css; ctx.fillText(e.name + (e.shield ? ' 🟣' : '') + (e.jailed ? ' 🔒' : ''), e.x, e.y - H - 2 + floatY);
   // barriga do chefe (visível só pra ele mesmo)
   if (e === me && e.kind === 'chefe') { const n = G.entities.filter(z => z.swallowed && z.alive).length; if (n) { ctx.fillStyle = '#b98cff'; ctx.beginPath(); ctx.arc(e.x + 22, e.y - 50, 11, 0, 7); ctx.fill(); ctx.fillStyle = '#000'; ctx.font = '900 13px Arial'; ctx.fillText(String(n), e.x + 22, e.y - 45); } }
 }
@@ -432,7 +438,7 @@ function drawBody(b) {
 function render() {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
   const z = G.cam.zoom; ctx.setTransform(z, 0, 0, z, canvas.width / 2 - G.cam.x * z, canvas.height / 2 - G.cam.y * z); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-  drawMap();
+  drawMap(); drawSpecials();
   for (const b of G.bodies) drawBody(b);
   const ents = G.entities.slice().sort((a, b) => a.y - b.y);
   for (const e of ents) drawEntity(e);

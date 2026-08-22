@@ -49,7 +49,7 @@ function renderMeetPlayers() {
   for (const e of G.entities) {
     const d = document.createElement('div'); d.className = 'mp' + (alive(e) ? '' : ' dead') + (e === me ? ' me' : '');
     d.appendChild(avatarCanvas(e, e === me && e.kind !== 'venus'));
-    const n = document.createElement('span'); n.className = 'nm'; n.textContent = e.name + (e.swallowed ? ' (na barriga)' : ''); n.style.color = e.color.css; d.appendChild(n);
+    const n = document.createElement('span'); n.className = 'nm'; n.textContent = e.name + (e.swallowed ? ' (na barriga)' : e.jailed ? ' (na jaula)' : ''); n.style.color = e.color.css; d.appendChild(n);
     if (M.info && M.info.reporter === e) { const t = document.createElement('span'); t.className = 'tag'; t.textContent = 'reportou'; d.appendChild(t); }
     const vs = document.createElement('span'); vs.className = 'votes'; for (const [vid, target] of M.votes) if (target === e.id) { const i = document.createElement('i'); const voter = G.entities.find(z => z.id === vid); i.style.background = voter ? voter.color.css : '#fff'; vs.appendChild(i); } d.appendChild(vs);
     if (M.phase === 'vote' && alive(e) && alive(me) && !M.playerVoted) { d.classList.add('votable'); d.onclick = () => castVote(me, e.id); }
@@ -156,9 +156,9 @@ function finishVote() {
   $('meeting').classList.add('hidden'); M.active = false;
   showEject(ejected, () => {
     if (ejected) {
-      ejected.alive = false; ejected.ghost = true; ejected.ejected = true; ejected.moving = false;
+      ejected.ejected = true; jailEntity(ejected); recordDeath(ejected, null);
       if (ejected.kind === 'chefe') releaseBelly(ejected);
-      if (ejected === G.player) becomeGhost('Você foi expulso!');
+      if (ejected === G.player) { hideHint(); toast('Você foi expulso e está na Jaula do Porão. Se os VENUS perceberem o erro, podem te soltar…'); $('ghost-note').textContent = '🔒 Você está na Jaula. Só observa — a menos que alguém te solte.'; $('ghost-note').classList.remove('hidden'); MUSIC.setMood('dark'); }
     }
     G.phase = 'play'; MUSIC.setMood(roleMood());
     checkWin();
