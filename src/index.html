@@ -67,27 +67,31 @@
   <!-- Start screen -->
   <div id="start" class="overlay">
     <div id="start-card">
-      <img id="start-logo" alt="BRODS">
-      <p class="tagline">Mistério na Mansão Assombrada</p>
-      <div id="start-roles">
-        <div class="role-chip venus"><img data-sprite="venus_front" alt=""><span>VENUS</span><small>Execute as missões e expulse os assassinos</small></div>
-        <div class="role-chip demom"><img data-sprite="demom_front" alt=""><span>DEMOM</span><small>Mate e sabote para vencer</small></div>
-        <div class="role-chip chefe"><img data-sprite="chefe_front" alt=""><span>CHEFE</span><small>Engula todos e sobreviva</small></div>
+      <div id="start-left">
+        <img id="start-logo" alt="BRODS">
+        <p class="tagline">Mistério na Mansão Assombrada</p>
+        <div id="start-roles">
+          <div class="role-chip venus"><img data-sprite="venus_front" alt=""><span>VENUS</span><small>Execute as missões e expulse os assassinos</small></div>
+          <div class="role-chip demom"><img data-sprite="demom_front" alt=""><span>DEMOM</span><small>Mate e sabote para vencer</small></div>
+          <div class="role-chip chefe"><img data-sprite="chefe_front" alt=""><span>CHEFE</span><small>Engula todos e sobreviva</small></div>
+        </div>
+        <div class="stripes" style="max-width:340px;margin:10px auto 0"></div>
       </div>
-      <div class="stripes" style="max-width:340px;margin:0 auto 12px"></div>
-      <div class="opt-row name-row"><label for="player-name">Seu nome no jogo</label><input id="player-name" type="text" maxlength="14" placeholder="Ex.: Lucca" autocomplete="off"></div>
-      <div class="opt-row"><label>Quem você quer ser</label><div id="role-pick" class="seg"><button data-role="random" class="on">🎲 Sorteio</button><button data-role="venus">VENUS</button><button data-role="demom">DEMOM</button><button data-role="chefe">CHEFE</button></div></div>
-      <div class="opt-row"><label>Sua cor</label><div id="color-pick"></div></div>
-      <div class="opt-row"><label>Personagens na mansão: <b id="players-val">8</b></label><input id="players-range" type="range" min="4" max="16" value="8" aria-label="Número de personagens"><div id="crowd" aria-hidden="true"></div></div>
-      <button id="btn-play" class="big-btn">JOGAR</button>
-      <button id="btn-tutorial" class="big-btn secondary" style="max-width:340px;margin:8px auto 0">🎓 MODO TREINO (primeira vez)</button>
-      <div class="btn-row">
-        <button id="btn-how" class="big-btn secondary">COMO JOGAR</button>
-        <button id="btn-settings" class="big-btn secondary">AJUSTES</button>
-        <button id="btn-medals" class="big-btn secondary">MEDALHAS</button>
+      <div id="start-right">
+        <div class="opt-row name-row"><label for="player-name">Seu nome no jogo</label><input id="player-name" type="text" maxlength="14" placeholder="Ex.: Lucca" autocomplete="off"></div>
+        <div class="opt-row"><label>Quem você quer ser</label><div id="role-pick" class="seg"><button data-role="random" class="on">🎲 Sorteio</button><button data-role="venus">VENUS</button><button data-role="demom">DEMOM</button><button data-role="chefe">CHEFE</button></div></div>
+        <div class="opt-row"><label>Sua cor</label><div id="color-pick"></div></div>
+        <div class="opt-row"><label>Personagens na mansão: <b id="players-val">8</b></label><input id="players-range" type="range" min="4" max="16" value="8" aria-label="Número de personagens"><div id="crowd" aria-hidden="true"></div></div>
+        <button id="btn-play" class="big-btn">JOGAR</button>
+        <button id="btn-tutorial" class="big-btn secondary">🎓 MODO TREINO (primeira vez)</button>
+        <div class="btn-row">
+          <button id="btn-how" class="big-btn secondary">COMO JOGAR</button>
+          <button id="btn-settings" class="big-btn secondary">AJUSTES</button>
+          <button id="btn-medals" class="big-btn secondary">MEDALHAS</button>
+        </div>
+        <p class="hint">Teclado: setas/WASD anda · <b>E</b> usa · <b>R</b> reporta · <b>Q</b> mata/engole · <b>F</b> sabota · Mouse: clique = matar/engolir ou usar, direito = reportar · Celular: joystick e botões</p>
+        <p class="version">Criado por Lucca · versão de teste</p>
       </div>
-      <p class="hint">Teclado: setas/WASD anda · <b>E</b> usa · <b>R</b> reporta · <b>Q</b> mata/engole · <b>F</b> sabota · Mouse: clique = matar/engolir ou usar, botão direito = reportar · Celular: joystick e botões</p>
-      <p class="version">Criado por Lucca · versão de teste</p>
     </div>
   </div>
 
