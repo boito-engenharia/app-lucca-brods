@@ -1,9 +1,8 @@
 name = "brods"
 compatibility_date = "2025-06-01"
-
-[assets]
-directory = "./public"
-
 routes = [
   { pattern = "brods.multiportal.app", custom_domain = true }
 ]
+
+[assets]
+directory = "./public"
