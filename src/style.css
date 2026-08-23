@@ -351,3 +351,13 @@ body.touch #minimap{width:130px;height:70px}
 #start.art{background-size:cover;background-position:center 30%;background-repeat:no-repeat}
 #start.art::before{display:none}
 #start.art::after{opacity:.6}
+
+/* ===== revelação ===== */
+#tl-card{max-width:680px;max-height:94vh;overflow:auto;text-align:left}
+#tl-card h2{text-align:center}
+.tl-roster{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px}
+.tl-chip{font-size:12px;padding:3px 10px;border-radius:999px;background:var(--card-2);border:2px solid #000}
+.tl-row{display:flex;gap:10px;align-items:flex-start;padding:7px 8px;border-radius:10px;margin:4px 0;background:var(--card-2);border:2px solid #000;font-size:13px;font-weight:700}
+.tl-row.kill{border-color:var(--red)}.tl-row.lie{border-color:#ff8c1a}.tl-row.meet{border-color:var(--yellow)}.tl-row.sab{border-color:var(--purple)}.tl-row.good{border-color:var(--green)}
+.tl-time{color:var(--muted);font-variant-numeric:tabular-nums;min-width:42px}
+.tl-ico{font-size:16px;min-width:22px;text-align:center}

@@ -6,7 +6,7 @@ const M = { active: false, phase: 'talk', timer: 0, votes: new Map(), info: null
 function startMeeting(info) {
   if (G.phase !== 'play' || M.active) return;
   M.active = true; M.info = info; M.votes = new Map(); M.suspicion = new Map(); M.accusations = []; M.playerVoted = false; M.talkTimers = [];
-  closeMinigame(); hideHint(); if (SAB.active) endSabotage(''); $('prompt2').classList.add('hidden'); G.phase = 'meeting'; SFX.play('alarm'); MUSIC.setMood('meeting');
+  closeMinigame(); hideHint(); if (SAB.active) endSabotage(''); logEvent('🚨', info.type === 'body' ? `Reunião: ${info.reporter.name} reportou o corpo de ${info.body.ent.name}` : `Reunião de emergência chamada por ${info.reporter.name}`, 'meet'); tutorialOnMeeting(); $('prompt2').classList.add('hidden'); G.phase = 'meeting'; SFX.play('alarm'); MUSIC.setMood('meeting');
   // onde cada um estava
   for (const e of G.entities) { const r = roomAt(e.x, e.y); e.roomAtMeeting = r ? r.id : null; }
   // teleporta os vivos para o Salão
@@ -101,7 +101,7 @@ function nm(e, cap) { if (e === G.player) return cap ? 'Você' : 'você'; return
 function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
 function prep(r) { return ['jardim', 'porao', 'sotao', 'salao', 'quarto', 'laboratorio'].includes(r.id) ? 'no' : 'na'; }
 function placeOf(e) { const r = ROOM_BY_ID[e.roomAtMeeting]; return r ? `${prep(r)} ${r.name}` : 'no corredor'; }
-function fakePlace(e) { const opts = ROOMS.filter(r => r.id !== e.roomAtMeeting); const r = pick(opts); return `${prep(r)} ${r.name}`; }
+function fakePlace(e) { const opts = ROOMS.filter(r => r.id !== e.roomAtMeeting); const r = pick(opts); logEvent('🤥', `${e.name} (${ROLE_INFO[e.kind].title}) mentiu: disse que estava ${prep(r)} ${r.name}` + (e.roomAtMeeting ? ` (estava ${prep(ROOM_BY_ID[e.roomAtMeeting])} ${ROOM_BY_ID[e.roomAtMeeting].name})` : ''), 'lie'); return `${prep(r)} ${r.name}`; }
 
 // ---------- Falas dos bots ----------
 function scheduleBotTalk() {
@@ -119,7 +119,7 @@ function scheduleBotTalk() {
   for (const b of rest) {
     add(() => {
       if (b.kind === 'venus') { const others = G.entities.filter(o => o !== b && alive(o)); const s = pick(others); const r = Math.random(); if (r < .45) say(b, pick([`Eu estava ${placeOf(b)} fazendo missão.`, `Não vi nada suspeito, estava ${placeOf(b)}.`, `Alguém viu alguma coisa?`])); else if (r < .65 && s) { say(b, pick([`Estou desconfiado ${dn(s)}, estava sozinho.`, `${on(s, true)} sumiu por um tempo…`])); M.accusations.push({ by: b, who: s }); bump(s, 12); } else say(b, pick(['Vamos pular, não tem prova.', 'Cuidado pra não expulsar um inocente!', 'Fiquem em dupla, é mais seguro.'])); }
-      else { const vens = G.entities.filter(o => o !== b && alive(o) && o.kind === 'venus' && o !== G.player); const s = pick(vens) || pick(G.entities.filter(o => o !== b && alive(o))); const r = Math.random(); if (r < .5) say(b, pick([`Eu estava ${fakePlace(b)} fazendo missão.`, `Não vi nada, estava ${fakePlace(b)}.`])); else if (s) { say(b, pick([`Acho que foi ${on(s)}, estava sozinho.`, `${on(s, true)} estava estranho perto de lá…`])); M.accusations.push({ by: b, who: s }); bump(s, 12); } }
+      else { const vens = G.entities.filter(o => o !== b && alive(o) && o.kind === 'venus' && o !== G.player); const s = pick(vens) || pick(G.entities.filter(o => o !== b && alive(o))); const r = Math.random(); if (r < .5) say(b, pick([`Eu estava ${fakePlace(b)} fazendo missão.`, `Não vi nada, estava ${fakePlace(b)}.`])); else if (s) { say(b, pick([`Acho que foi ${on(s)}, estava sozinho.`, `${on(s, true)} estava estranho perto de lá…`])); M.accusations.push({ by: b, who: s }); bump(s, 12); logEvent('🤥', `${b.name} (${ROLE_INFO[b.kind].title}) acusou ${s.name} de propósito`, 'lie'); } }
     }, t); t += 1500 + Math.random() * 800;
   }
 }
@@ -157,6 +157,7 @@ function finishVote() {
   const ejected = (best && best !== 'skip' && !tie) ? G.entities.find(e => e.id === best) : null;
   $('meeting').classList.add('hidden'); M.active = false;
   showEject(ejected, () => {
+    logEvent(ejected ? '🗳️' : '🤷', ejected ? `${ejected.name} foi expulso — era ${ROLE_INFO[ejected.kind].title}${ejected.kind === 'venus' ? ' (inocente!)' : ''}` : 'Votação terminou sem expulsão', ejected && ejected.kind === 'venus' ? 'lie' : 'meet');
     if (ejected) {
       if (!G.firstEjectRole) { G.firstEjectRole = ejected.kind; G.myFirstVoteHit = M.votes.get(G.player.id) === ejected.id; }
       ejected.ejected = true; jailEntity(ejected); recordDeath(ejected, null);

@@ -76,6 +76,7 @@
       <div class="stripes" style="max-width:340px;margin:0 auto 12px"></div>
       <div class="opt-row"><label>Personagens na mansão: <b id="players-val">8</b></label><input id="players-range" type="range" min="4" max="16" value="8" aria-label="Número de personagens"><div id="crowd" aria-hidden="true"></div></div>
       <button id="btn-play" class="big-btn">JOGAR</button>
+      <button id="btn-tutorial" class="big-btn secondary" style="max-width:340px;margin:8px auto 0">🎓 MODO TREINO (primeira vez)</button>
       <div class="btn-row">
         <button id="btn-how" class="big-btn secondary">COMO JOGAR</button>
         <button id="btn-settings" class="big-btn secondary">AJUSTES</button>
@@ -141,6 +142,15 @@
       <button id="btn-settings-close" class="big-btn">PRONTO</button>
     </div>
   </div>
+  <!-- Revelação final -->
+  <div id="timeline" class="overlay hidden">
+    <div class="card" id="tl-card">
+      <h2>A revelação</h2>
+      <p class="hint" style="margin:0 0 8px">Tudo o que aconteceu de verdade nesta partida — quem era quem, cada ataque, cada mentira.</p>
+      <div id="tl-body"></div>
+      <button id="btn-tl-close" class="big-btn">FECHAR</button>
+    </div>
+  </div>
   <!-- Medalhas -->
   <div id="medals" class="overlay hidden">
     <div class="card" id="med-card">
@@ -168,7 +178,7 @@
       <p id="win-sub"></p>
       <div id="win-roster"></div>
       <button id="btn-again" class="big-btn">Jogar de novo</button>
-      <button id="btn-win-medals" class="big-btn secondary">Ver medalhas</button>
+      <div class="btn-row"><button id="btn-win-timeline" class="big-btn secondary">🔎 Ver revelação</button><button id="btn-win-medals" class="big-btn secondary">🏅 Ver medalhas</button></div>
     </div>
   </div>
 </div>

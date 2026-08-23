@@ -31,7 +31,7 @@ if os.path.isdir(COM):
 
 html = read(os.path.join(SRC, 'index.html'))
 css = read(os.path.join(SRC, 'style.css'))
-js_parts = [read(os.path.join(SRC, n)) for n in ['data.js', 'minigames.js', 'render.js', 'game.js', 'ai.js', 'sabotage.js', 'specials.js', 'meeting.js', 'music.js', 'settings.js']]
+js_parts = [read(os.path.join(SRC, n)) for n in ['data.js', 'minigames.js', 'render.js', 'game.js', 'ai.js', 'sabotage.js', 'specials.js', 'meeting.js', 'music.js', 'settings.js', 'extras.js']]
 js = '\n'.join(js_parts)
 
 html = html.replace('/*__CSS__*/', css)
@@ -40,4 +40,5 @@ html = html.replace('/*__JS__*/', js)
 
 with open(OUT, 'w', encoding='utf-8') as f:
     f.write(html)
-print('ok ->', OUT, f'{os.path.getsize(OUT)//1024} KB')
+import shutil; shutil.copyfile(OUT, os.path.join(ROOT, 'index.html'))
+print('ok ->', OUT, f'{os.path.getsize(OUT)//1024} KB', '(+ index.html)')

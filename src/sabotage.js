@@ -18,7 +18,7 @@ function canSabotage(e) { return G.phase === 'play' && alive(e) && e.kind === 'd
 
 function doSabotage(by, type, roomId) {
   if (!canSabotage(by)) return false;
-  by.sabCd = SETTINGS.sabCooldown;
+  by.sabCd = SETTINGS.sabCooldown; logEvent('😈', `${by.name} (DEMOM) sabotou: ${SAB_INFO[type].name}`, 'sab');
   if (type === 'lights') {
     SAB.active = { type, t: 999, fixers: new Set() }; G.dark = true; SFX.play('lights'); if (by === G.player) G.usedLights = true;
     if (G.player.kind !== 'demom') { MUSIC.setMood('tense'); toast('💡 As luzes apagaram! Religue na caixa de força do Porão.'); } else toast('💡 Luzes apagadas!');
@@ -112,7 +112,7 @@ function openSabMenu() {
 
 // ---------- Bots ----------
 function aiSabotageTick(e, dt) {
-  if (e.kind !== 'demom' || !e.isBot || !alive(e)) return;
+  if (e.kind !== 'demom' || !e.isBot || !alive(e)) return; if (TUT.active) return;
   if (e.sabCd === undefined) e.sabCd = 35 + Math.random() * 20;
   if (!canSabotage(e)) return;
   if (Math.random() > dt * .12) return;     // em média a cada ~8 s quando pronto

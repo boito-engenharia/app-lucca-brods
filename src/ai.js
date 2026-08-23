@@ -89,6 +89,7 @@ function aiFollow(e, dt) {
   return false;
 }
 function aiFindVictim(e) {
+  if (TUT.active && TUT.step < 4) return null;
   // vítima: alguém vivo no mesmo cômodo, sem terceiros por perto e fora da vista do jogador
   let best = null, bd = 1e9;
   for (const v of G.entities) {

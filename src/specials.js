@@ -111,7 +111,7 @@ function revive(d) {
   SP.altarUsed = true; d.alive = true; d.ghost = false; d.digested = false; d.swallowed = false; d.x = 800; d.y = 1060; d.speed = d.isBot ? SETTINGS.botSpeed : SETTINGS.playerSpeed;
   if (d.isBot) { d.ai.state = 'idle'; d.ai.wait = 1; d.ai.witness = null; } else { $('ghost-note').classList.add('hidden'); toast('Você voltou à vida!'); }
   G.bodies = G.bodies.filter(b => b.ent !== d); spawnFx(d.x, d.y - 30, '#ffd300', 24, 150, 1);
-  SFX.play('bell'); toast(`✨ ${d.name} voltou à vida! O sino tocou na Capela…`); renderTaskList(); unlockMedal('reviver');
+  logEvent('✨', `${d.name} voltou à vida no Altar`, 'good'); SFX.play('bell'); toast(`✨ ${d.name} voltou à vida! O sino tocou na Capela…`); renderTaskList(); unlockMedal('reviver');
   // vilões ouvem o sino e vão até a Capela
   for (const e of G.entities) if (e.isBot && alive(e) && e.kind !== 'venus') { aiGoto(e, { x: 800, y: 1100 }); e.ai.state = 'goto'; }
   if (G.player.kind !== 'venus') toast('🔔 O sino tocou na Capela! Alguém usou o Altar…');
@@ -122,7 +122,7 @@ function jailEntity(e) { e.jailed = true; e.alive = false; e.ghost = false; e.mo
 function releaseJailed(e) {
   e.jailed = false; e.alive = true; e.ghost = false; e.ejected = false; e.x = 250; e.y = 1050;
   if (e.isBot) { e.ai.state = 'idle'; e.ai.wait = 1; } else { $('ghost-note').classList.add('hidden'); toast('Você foi solto da Jaula!'); }
-  SFX.play('ok'); toast(`🔓 ${e.name} foi solto da Jaula!`); renderTaskList(); checkWin();
+  logEvent('🔓', `${e.name} foi solto da Jaula (era ${ROLE_INFO[e.kind].title})`, e.kind === 'venus' ? 'good' : 'sab'); SFX.play('ok'); toast(`🔓 ${e.name} foi solto da Jaula!`); renderTaskList(); checkWin();
 }
 
 // ---------- Desenho ----------
