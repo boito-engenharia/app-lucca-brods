@@ -132,7 +132,7 @@ function guestStart(msg) {
   if (msg.role !== 'venus') { $('reveal-disguise').classList.remove('hidden'); $('reveal-disguise-text').innerHTML = `👀 <b>Ninguém vê que você é ${info.title}.</b><br>Para todo mundo, você é o <b>VENUS ${me.color.name}</b>.`; } else $('reveal-disguise').classList.add('hidden');
   $('reveal-controls').innerHTML = msg.role === 'venus' ? `<span class="key">E</span> USAR · <span class="key">R</span> REPORTAR` : `<span class="key">Q</span> ${msg.role === 'chefe' ? 'ENGOLIR' : 'MATAR'} · <span class="key">E</span> USAR · <span class="key">R</span> REPORTAR`;
   $('reveal').className = 'overlay ' + info.cls; $('reveal').classList.remove('hidden'); SFX.play(msg.role === 'venus' ? 'ok' : 'kill');
-  setTimeout(() => { $('reveal').classList.add('hidden'); G.phase = 'play'; $('hud').classList.remove('hidden'); setupHud(); MUSIC.setMood(roleMood()); G.hintT = 30; showHint(msg.role === 'venus' ? 'Faça suas missões (E) e reporte corpos (R). Vocês estão jogando juntos!' : `Você é ${info.title} disfarçado. Chegue perto de alguém sozinho e aperte Q.`); }, 5200);
+  setTimeout(() => { $('reveal').classList.add('hidden'); G.phase = 'play'; $('hud').classList.remove('hidden'); setupHud(); MUSIC.setMood(roleMood()); G.hintT = isTouch ? 8 : 30; if (isTouch) setTimeout(() => $('disguise').classList.add('fade'), 7000); showHint(msg.role === 'venus' ? 'Faça suas missões (E) e reporte corpos (R). Vocês estão jogando juntos!' : `Você é ${info.title} disfarçado. Chegue perto de alguém sozinho e aperte Q.`); }, 5200);
 }
 function guestSnapshot(msg) {
   if (!G.guest) return;

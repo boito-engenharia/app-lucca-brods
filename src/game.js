@@ -113,7 +113,7 @@ const joy = { active: false, id: null, cx: 0, cy: 0, dx: 0, dy: 0 };
   const zone = $('joystick'), base = $('joy-base'), knob = $('joy-knob'); const R = 50;
   zone.addEventListener('pointerdown', e => { if (joy.active) return; joy.active = true; joy.id = e.pointerId; joy.cx = e.clientX; joy.cy = e.clientY; joy.dx = joy.dy = 0; base.classList.add('active'); base.style.left = (e.clientX - 65) + 'px'; base.style.top = (e.clientY - 65) + 'px'; base.style.bottom = 'auto'; knob.style.transform = 'translate(0,0)'; zone.setPointerCapture(e.pointerId); SFX.unlock(); });
   const move = e => { if (!joy.active || e.pointerId !== joy.id) return; let dx = e.clientX - joy.cx, dy = e.clientY - joy.cy; const d = Math.hypot(dx, dy); if (d > R) { dx = dx / d * R; dy = dy / d * R; } joy.dx = dx / R; joy.dy = dy / R; knob.style.transform = `translate(${dx}px,${dy}px)`; };
-  const end = e => { if (e.pointerId !== joy.id) return; joy.active = false; joy.dx = joy.dy = 0; base.classList.remove('active'); };
+  const end = e => { if (e.pointerId !== joy.id) return; joy.active = false; joy.dx = joy.dy = 0; base.classList.remove('active'); knob.style.transform = 'translate(0,0)'; if (isTouch) { base.style.left = ''; base.style.top = ''; base.style.bottom = ''; } };
   zone.addEventListener('pointermove', move); zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end);
 })();
 $('btn-use').addEventListener('click', () => { SFX.unlock(); playerUse(); });
@@ -186,7 +186,7 @@ function newGame() {
     : myRole === 'demom' ? `Chegue perto de alguém sozinho e aperte ${K('Q', 'MATAR')}<br>Espere a recarga · fuja pelas passagens secretas (${K('E', 'USAR')})<br>Na reunião: minta e acuse!`
     : `Chegue bem perto de alguém e aperte ${K('Q', 'ENGOLIR')}<br>Ele fica 60 s na sua barriga — não seja expulso!<br>Pode engolir até o DEMOM`;
   $('reveal').className = 'overlay ' + info.cls; $('reveal').classList.remove('hidden'); SFX.play(myRole === 'venus' ? 'ok' : 'kill');
-  setTimeout(() => { $('reveal').classList.add('hidden'); G.phase = 'play'; $('hud').classList.remove('hidden'); setupHud(); G.hintT = 40; MUSIC.setMood(roleMood()); if (G.campStartDark) { setTimeout(() => { const d = G.entities.find(e => e.kind === 'demom' && e.isBot); if (d && G.phase === 'play') { d.sabCd = 0; doSabotage(d, 'lights'); } }, 3000); } if (G.mode === 'boss') { bossSetup(); MUSIC.setMood('tense'); return; } if (G.tutorial) { G.tutorial = false; tutorialBegin(); return; } showHint(myRole === 'venus' ? 'Siga as estações amarelas e aperte E pra fazer a missão. Viu um corpo? Aperte R.' : myRole === 'demom' ? 'Você parece um VENUS. Chegue perto de alguém sozinho e aperte Q pra MATAR (recarga: 12 s).' : 'Você parece um VENUS. Chegue bem perto de alguém e aperte Q pra ENGOLIR (recarga: 12 s).'); }, 5200);
+  setTimeout(() => { $('reveal').classList.add('hidden'); G.phase = 'play'; $('hud').classList.remove('hidden'); setupHud(); G.hintT = isTouch ? 8 : 40; MUSIC.setMood(roleMood()); if (isTouch) { $('disguise').classList.remove('fade'); setTimeout(() => $('disguise').classList.add('fade'), 7000); } if (G.campStartDark) { setTimeout(() => { const d = G.entities.find(e => e.kind === 'demom' && e.isBot); if (d && G.phase === 'play') { d.sabCd = 0; doSabotage(d, 'lights'); } }, 3000); } if (G.mode === 'boss') { bossSetup(); MUSIC.setMood('tense'); return; } if (G.tutorial) { G.tutorial = false; tutorialBegin(); return; } showHint(myRole === 'venus' ? 'Siga as estações amarelas e aperte E pra fazer a missão. Viu um corpo? Aperte R.' : myRole === 'demom' ? 'Você parece um VENUS. Chegue perto de alguém sozinho e aperte Q pra MATAR (recarga: 12 s).' : 'Você parece um VENUS. Chegue bem perto de alguém e aperte Q pra ENGOLIR (recarga: 12 s).'); }, 5200);
 }
 function roleMood() { const me = G.player; if (!me) return 'menu'; if (!me.alive) return 'dark'; if (SAB.active && (SAB.active.type === 'lights' || SAB.active.type === 'ghosts') && me.kind !== 'demom') return 'tense'; return me.kind === 'venus' ? 'calm' : 'villain'; }
 function playerName() { const v = ($('player-name').value || '').trim(); return v ? v.slice(0, 14) : 'Você'; }
@@ -264,6 +264,7 @@ function updatePlayerNear() {
   $('btn-use').classList.toggle('ready', !!near);
   $('btn-report').classList.toggle('ready', !!G.nearBody);
   $('btn-kill').classList.toggle('ready', !!G.nearTarget && me.killCd <= 0);
+  if (isTouch && me.kind !== 'venus') { const max = me.kind === 'chefe' ? SETTINGS.swallowCooldown : SETTINGS.killCooldown; const b = $('btn-kill'); b.style.setProperty('--p', (me.killCd > 0 ? Math.round(100 * me.killCd / max) : 0) + '%'); b.textContent = me.killCd > 0 ? Math.ceil(me.killCd) + 's' : (me.kind === 'chefe' ? 'ENGOLIR' : 'MATAR'); }
   $('btn-sab').classList.toggle('ready', canSabotage(me));
   // aviso de ação secundária (Q / R)
   const p2 = $('prompt2'); let p2k = null, p2t = '';

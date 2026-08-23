@@ -501,3 +501,26 @@ body.touch #minimap{width:130px;height:70px}
   #hint{top:auto;bottom:26%;font-size:12px;padding:6px 12px;max-width:70vw}#sab-banner{font-size:11px;padding:5px 12px;top:auto;bottom:4%}
   body.touch #cooldown{top:auto;bottom:10px;right:190px;padding:3px 6px}
 }
+
+/* ===== celular: HUD limpo + joystick fixo ===== */
+body.touch #joy-base{display:block;left:26px;bottom:26px;top:auto;width:118px;height:118px;background:rgba(255,255,255,.08);border:3px solid rgba(255,255,255,.28);box-shadow:0 0 0 6px rgba(0,0,0,.15)}
+body.touch #joy-base::after{content:"";position:absolute;inset:26px;border-radius:50%;border:2px dashed rgba(255,255,255,.18)}
+body.touch #joy-knob{width:54px;height:54px;margin:-27px 0 0 -27px;background:rgba(255,211,0,.7);box-shadow:0 3px 0 rgba(0,0,0,.6)}
+body.touch #joy-base.active{background:rgba(255,255,255,.14)}
+body.touch #prompt,body.touch #prompt2,body.touch #cooldown,body.touch #minimap,body.touch #task-list{display:none!important}
+body.touch #task-panel{min-width:110px;max-width:130px;padding:4px 8px 6px;border-radius:12px}
+body.touch #task-title{font-size:9px;letter-spacing:1px}
+body.touch #task-bar{height:8px;margin:4px 0 0}
+body.touch #room-name{font-size:9px;padding:3px 9px;letter-spacing:.5px;max-width:40vw}
+body.touch #role-banner{font-size:9px;padding:1px 8px}
+body.touch #disguise{font-size:9px;padding:1px 8px;transition:opacity .6s}
+body.touch #disguise.fade{opacity:0}
+body.touch .icon-btn{width:34px;height:34px;font-size:14px}
+body.touch #hint{top:auto;bottom:27%;font-size:12px;padding:6px 12px;max-width:74vw;left:50%}
+body.touch #toast{top:16%;font-size:13px;padding:7px 12px;max-width:80vw}
+body.touch #ghost-note{font-size:12px;bottom:30%}
+/* recarga dentro do botão de ataque */
+body.touch .act-btn.kill{position:relative;overflow:hidden}
+body.touch .act-btn.kill::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(rgba(0,0,0,.55) var(--p,0%),transparent 0);pointer-events:none}
+body.touch .act-btn.kill.ready::before{display:none}
+body.touch .act-btn.kill span{position:relative}
