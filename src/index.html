@@ -78,12 +78,13 @@
         <div class="stripes" style="max-width:340px;margin:10px auto 0"></div>
       </div>
       <div id="start-right">
+        <div id="rank-box"><span id="rank-badge">🎒 Recruta</span><div id="rank-bar"><div id="rank-fill"></div></div><small id="rank-xp">0 XP</small></div>
         <div class="opt-row name-row"><label for="player-name">Seu nome no jogo</label><input id="player-name" type="text" maxlength="14" placeholder="Ex.: Lucca" autocomplete="off"></div>
         <div class="opt-row"><label>Quem você quer ser</label><div id="role-pick" class="seg"><button data-role="random" class="on">🎲 Sorteio</button><button data-role="venus">VENUS</button><button data-role="demom">DEMOM</button><button data-role="chefe">CHEFE</button></div></div>
         <div class="opt-row"><label>Sua cor</label><div id="color-pick"></div></div>
         <div class="opt-row"><label>Personagens na mansão: <b id="players-val">8</b></label><input id="players-range" type="range" min="4" max="16" value="8" aria-label="Número de personagens"><div id="crowd" aria-hidden="true"></div></div>
         <button id="btn-play" class="big-btn">JOGAR</button>
-        <button id="btn-tutorial" class="big-btn secondary">🎓 MODO TREINO (primeira vez)</button>
+        <div class="btn-row"><button id="btn-campaign" class="big-btn secondary camp">🗺️ CAMPANHA</button><button id="btn-tutorial" class="big-btn secondary">🎓 MODO TREINO</button></div>
         <div class="btn-row">
           <button id="btn-how" class="big-btn secondary">COMO JOGAR</button>
           <button id="btn-settings" class="big-btn secondary">AJUSTES</button>
@@ -151,6 +152,15 @@
       <button id="btn-settings-close" class="big-btn">PRONTO</button>
     </div>
   </div>
+  <!-- Campanha -->
+  <div id="campaign" class="overlay hidden">
+    <div class="card" id="camp-card">
+      <h2>Campanha</h2>
+      <p class="hint" style="margin:0 0 8px">Vença 2 partidas de uma fase para liberar o chefão. Derrote o chefão para abrir a próxima fase. Na campanha você é sempre VENUS.</p>
+      <div id="camp-body"></div>
+      <button id="btn-camp-close" class="big-btn">FECHAR</button>
+    </div>
+  </div>
   <!-- Revelação final -->
   <div id="timeline" class="overlay hidden">
     <div class="card" id="tl-card">
@@ -185,6 +195,7 @@
       <img id="win-hero" alt="">
       <h1 id="win-title">VENUS VENCERAM!</h1>
       <p id="win-sub"></p>
+      <div id="win-xp" class="hidden"></div>
       <div id="win-roster"></div>
       <button id="btn-again" class="big-btn">Jogar de novo</button>
       <div class="btn-row"><button id="btn-win-timeline" class="big-btn secondary">🔎 Ver revelação</button><button id="btn-win-medals" class="big-btn secondary">🏅 Ver medalhas</button></div>

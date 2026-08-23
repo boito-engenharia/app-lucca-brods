@@ -50,6 +50,11 @@ const MEDALS = [
   { id: 'shield',     icon: '🧪', name: 'Escudo na Hora Certa',    desc: 'A Poção de Escudo salva você de um ataque.' },
   { id: 'fugitive',   icon: '🕳️', name: 'Fugitivo',                desc: 'Use passagens secretas 3 vezes numa partida.' },
   { id: 'reviver',    icon: '✨', name: 'Segunda Chance',          desc: 'Traga alguém de volta no Altar.' },
+  { id: 'boss1',      icon: '👹', name: 'Demom Sombrio',           desc: 'Escape do chefão da fase 1.' },
+  { id: 'boss2',      icon: '🍳', name: 'Chefe Gigante',           desc: 'Escape do chefão da fase 2.' },
+  { id: 'boss3',      icon: '🌑', name: 'Demom das Trevas',        desc: 'Escape do chefão da fase 3.' },
+  { id: 'boss4',      icon: '👥', name: 'Os Gêmeos',               desc: 'Escape dos chefões da fase 4.' },
+  { id: 'boss5',      icon: '👑', name: 'Senhor da Mansão',        desc: 'Complete a campanha!' },
 ];
 const MED = { have: new Set(), counters: { reads: 0 } };
 function loadMedals() { try { const s = JSON.parse(localStorage.getItem('brods_medals') || '{}'); (s.have || []).forEach(x => MED.have.add(x)); Object.assign(MED.counters, s.counters || {}); } catch (e) { } }

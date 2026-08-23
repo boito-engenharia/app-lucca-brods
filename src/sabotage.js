@@ -14,7 +14,7 @@ const SAB_INFO = {
   mess:   { name: 'Bagunçar missão', icon: '💥', desc: 'Desfaz uma missão já concluída por um VENUS.' },
 };
 
-function canSabotage(e) { return G.phase === 'play' && alive(e) && e.kind === 'demom' && !SAB.active && (e.sabCd || 0) <= 0; }
+function canSabotage(e) { return G.phase === 'play' && !G.campNoSab && alive(e) && e.kind === 'demom' && !SAB.active && (e.sabCd || 0) <= 0; }
 
 function doSabotage(by, type, roomId) {
   if (!canSabotage(by)) return false;
@@ -64,6 +64,7 @@ function sabUpdate(dt) {
     else if (s.t <= 0) { endSabotage(''); G.result = 'ghosts'; endGame('demom'); }
   }
   else if (s.type === 'lights') {
+    if (BOSS.active) return;
     // conserto: um VENUS (bot) parado na caixa de força por 4 s; o jogador usa o minijogo
     for (const e of G.entities) {
       if (!e.isBot || !alive(e) || e.kind !== 'venus') continue;

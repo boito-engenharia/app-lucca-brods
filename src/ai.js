@@ -43,6 +43,7 @@ function aiPickTaskTarget(e) {
   e.ai.task = null; const r = ROOMS[Math.floor(Math.random() * ROOMS.length)]; const st = STATIONS[r.id]; const s = st[Math.floor(Math.random() * st.length)]; aiGoto(e, { x: s[0], y: s[1] });
 }
 function aiUpdate(e, dt) {
+  if (e.kind === 'boss') return;
   const A = e.ai;
   aiSabotageTick(e, dt);
   // vilões: caçar se der
@@ -114,6 +115,7 @@ function aiOnKill(killer, victim) {
   for (const o of G.entities) { if (o === killer || !alive(o)) continue; o.ai.lastRooms.push(roomAt(o.x, o.y) ? roomAt(o.x, o.y).id : null); }
 }
 function aiNoticeBodies(dt) {
+  if (BOSS.active) return;
   for (const b of G.bodies) {
     for (const e of G.entities) {
       if (!e.isBot || !alive(e) || e.kind !== 'venus') continue;

@@ -410,3 +410,29 @@ body.touch #minimap{width:130px;height:70px}
   #start-right .opt-row{margin:2px 0}
   #color-pick i{width:17px;height:20px}
 }
+
+/* ===== carreira / campanha ===== */
+#rank-box{display:flex;align-items:center;gap:8px;justify-content:center;margin:0 0 6px;font-size:12px}
+#rank-badge{font-weight:900;color:var(--yellow);white-space:nowrap}
+#rank-bar{width:120px;height:10px;background:#000;border:2px solid #000;border-radius:8px;overflow:hidden}
+#rank-fill{height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--yellow));transition:width .4s}
+#rank-xp{color:var(--muted);font-weight:700;white-space:nowrap}
+#color-pick i.special{border-color:var(--yellow)}
+#color-pick i.special.locked{opacity:.35;filter:grayscale(.6)}
+.big-btn.secondary.camp{background:var(--purple);color:#fff}
+#win-xp{background:var(--card-2);border:3px solid #000;border-radius:12px;padding:6px 12px;font-size:12px;color:var(--muted);margin:0 0 8px}
+#win-xp b{color:var(--yellow);font-size:15px}
+#camp-card{max-width:620px;max-height:94vh;overflow:auto;text-align:left}
+#camp-card h2{text-align:center}
+.ph-card{background:var(--card-2);border:3px solid #000;border-radius:14px;padding:10px;margin:8px 0}
+.ph-card.locked{opacity:.55}
+.ph-card.done{border-color:var(--yellow)}
+.ph-head{display:flex;align-items:center;gap:10px}
+.ph-num{width:34px;height:34px;border-radius:50%;background:var(--yellow);color:#000;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:18px;border:3px solid #000;flex:none}
+.ph-card.locked .ph-num{background:#555;font-size:14px}
+.ph-title{flex:1}.ph-title b{display:block;font-size:15px}.ph-title small{font-size:12px;color:var(--muted);font-weight:700}
+.ph-stars{font-size:16px;letter-spacing:2px;color:var(--yellow)}
+.ph-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.ph-row .small-btn{flex:1;font-size:12px}
+.boss-btn{background:var(--red)!important;color:#fff!important}
+.boss-btn:disabled{background:#444!important;color:#aaa!important}
