@@ -121,7 +121,8 @@ h1,h2,.display{font-family:var(--display);font-weight:400;letter-spacing:1px;-we
 #ghost-note{position:absolute;left:50%;bottom:12%;transform:translateX(-50%);background:rgba(60,60,120,.85);border:3px solid #aab;border-radius:12px;padding:8px 14px;font-size:14px}
 #cooldown{position:absolute;right:14px;bottom:30%;background:var(--panel);border:3px solid #000;border-radius:12px;padding:6px 12px;box-shadow:var(--shadow);font-size:13px}
 #cooldown #cd-label{font-family:var(--display);letter-spacing:1px;color:var(--lilac)}
-body.touch #cooldown{bottom:auto;top:70px}
+body.touch #cooldown{bottom:auto;top:120px;right:10px;padding:4px 8px;font-size:11px}
+body.touch #cd-ring{width:42px;height:42px}
 
 /* Touch */
 #touch-ui{display:none}
@@ -320,3 +321,29 @@ body.touch #minimap{width:130px;height:70px}
 #confetti i{position:absolute;top:-12px;width:10px;height:14px;border:2px solid #000;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
 @media (max-height:600px){#minimap{display:none}}
+
+/* ===== rodada 2 ===== */
+#win-hero{height:120px;margin:-60px auto 4px;display:block;filter:drop-shadow(0 8px 0 #000);animation:bounce .9s cubic-bezier(.2,1.6,.4,1)}
+.role-venus{color:var(--yellow)}.role-demom{color:var(--red)}.role-chefe{color:var(--lilac)}
+#room-name{white-space:nowrap;max-width:46vw;overflow:hidden;text-overflow:ellipsis}
+.mg-candle{background:linear-gradient(90deg,#fff 0,#f3f0e6 50%,#d9d4c4 100%);box-shadow:var(--shadow),inset -6px 0 10px rgba(0,0,0,.12)}
+.mg-candle::before{content:"";position:absolute;left:50%;top:-6px;width:3px;height:8px;margin-left:-1.5px;background:#333;border-radius:2px}
+.mg-candle::after{box-shadow:0 0 18px 6px rgba(255,180,60,.55)}
+.mg-tile{box-shadow:var(--shadow),inset 0 -4px 0 rgba(0,0,0,.08)}
+@media (max-width:700px){
+  #hud-top{padding:6px 8px}
+  #task-panel{min-width:120px;max-width:130px;padding:5px 8px}
+  #task-title{font-size:10px;letter-spacing:1px}
+  #room-name{font-size:9px;padding:4px 8px;max-width:38vw;letter-spacing:.5px}
+  #role-banner{font-size:10px;padding:2px 8px}
+  #hud-right{gap:4px}
+  .icon-btn{width:36px;height:36px;font-size:15px}
+  #minimap{width:110px;height:60px}
+  #win-hero{height:90px;margin-top:-50px}
+  .act-btn{width:74px;height:74px;font-size:12px}
+  #touch-buttons{right:12px;bottom:18px;gap:10px}
+}
+
+#reveal.venus{background:radial-gradient(circle at 50% 38%,rgba(255,211,0,.22),#000 62%)}
+#reveal.demom{background:radial-gradient(circle at 50% 38%,rgba(255,26,26,.25),#000 62%)}
+#reveal.chefe{background:radial-gradient(circle at 50% 38%,rgba(185,140,255,.25),#000 62%)}

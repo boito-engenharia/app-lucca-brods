@@ -174,7 +174,7 @@ function newGame() {
   $('reveal-controls').innerHTML = myRole === 'venus' ? `${K('E', 'USAR')} nas estações amarelas = missão<br>${K('R', 'REPORTAR')} perto de um corpo<br>Botão de emergência no Salão: ${K('E', 'USAR')}`
     : myRole === 'demom' ? `Chegue perto de alguém sozinho e aperte ${K('Q', 'MATAR')}<br>Espere a recarga · fuja pelas passagens secretas (${K('E', 'USAR')})<br>Na reunião: minta e acuse!`
     : `Chegue bem perto de alguém e aperte ${K('Q', 'ENGOLIR')}<br>Ele fica 60 s na sua barriga — não seja expulso!<br>Pode engolir até o DEMOM`;
-  $('reveal').classList.remove('hidden'); SFX.play(myRole === 'venus' ? 'ok' : 'kill');
+  $('reveal').className = 'overlay ' + info.cls; $('reveal').classList.remove('hidden'); SFX.play(myRole === 'venus' ? 'ok' : 'kill');
   setTimeout(() => { $('reveal').classList.add('hidden'); G.phase = 'play'; $('hud').classList.remove('hidden'); setupHud(); G.hintT = 40; MUSIC.setMood(roleMood()); showHint(myRole === 'venus' ? 'Siga as estações amarelas e aperte E pra fazer a missão. Viu um corpo? Aperte R.' : myRole === 'demom' ? 'Você parece um VENUS. Chegue perto de alguém sozinho e aperte Q pra MATAR (recarga: 12 s).' : 'Você parece um VENUS. Chegue bem perto de alguém e aperte Q pra ENGOLIR (recarga: 12 s).'); }, 5200);
 }
 function roleMood() { const me = G.player; if (!me) return 'menu'; if (!me.alive) return 'dark'; if (SAB.active && (SAB.active.type === 'lights' || SAB.active.type === 'ghosts') && me.kind !== 'demom') return 'tense'; return me.kind === 'venus' ? 'calm' : 'villain'; }
@@ -351,7 +351,7 @@ function taskProgress() { let tot = 0, done = 0; for (const e of G.entities) { i
 function visibleStations() { const me = G.player; if (!me) return []; return me.tasks.map(t => { const p = taskPos(TASK_BY_ID[t.id]); return { x: p.x, y: p.y, done: t.done, icon: TASK_BY_ID[t.id].icon }; }); }
 function renderTaskList() {
   const me = G.player; const ul = $('task-list'); ul.innerHTML = '';
-  const title = me.kind === 'venus' ? 'MISSÕES' : 'MISSÕES DE MENTIRA';
+  const title = me.kind === 'venus' ? 'MISSÕES' : (innerWidth < 700 ? 'DISFARCE' : 'MISSÕES · DISFARCE');
   $('task-title').firstChild.textContent = title + ' ';
   for (const t of me.tasks) { const d = TASK_BY_ID[t.id]; const li = document.createElement('li'); li.textContent = ROOM_BY_ID[d.room].name + ': ' + d.name; if (t.done) li.classList.add('done'); ul.appendChild(li); }
   const p = taskProgress(); const pct = p.tot ? Math.round(100 * p.done / p.tot) : 0;
@@ -393,9 +393,11 @@ function endGame(winner) {
   MUSIC.stop(); SFX.play(iWon ? 'win' : 'lose'); checkMedalsEnd(winner);
   const names = { venus: 'VENUS VENCERAM!', demom: 'O DEMOM VENCEU!', chefe: 'O CHEFE VENCEU!' };
   $('win-title').textContent = names[winner]; $('win-title').className = winner;
-  $('win-sub').textContent = iWon ? '🎉 Você venceu!' : 'Você perdeu desta vez…';
+  const p = taskProgress(); const reason = winner === 'venus' ? (p.tot && p.done >= p.tot ? 'Todas as missões foram concluídas.' : 'O DEMOM e o CHEFE foram eliminados.') : winner === 'demom' ? (G.result === 'ghosts' ? 'Os fantasmas tomaram a mansão.' : 'Sobraram poucos VENUS para resistir.') : 'O CHEFE engoliu e sobreviveu a todos.';
+  $('win-sub').textContent = (iWon ? '🎉 Você venceu! ' : 'Você perdeu desta vez… ') + reason;
+  $('win-hero').src = SPRITE_DATA[winner + '_front'];
   const ro = $('win-roster'); ro.innerHTML = '';
-  for (const e of G.entities) { const d = document.createElement('div'); d.className = 'mp'; const c = avatarCanvas(e, true); d.appendChild(c); const n = document.createElement('span'); n.className = 'nm'; n.textContent = `${e.name} — ${ROLE_INFO[e.kind].title}${e.alive ? '' : ' ☠'}`; d.appendChild(n); ro.appendChild(d); }
+  for (const e of G.entities) { const d = document.createElement('div'); d.className = 'mp'; const c = avatarCanvas(e, true); d.appendChild(c); const n = document.createElement('span'); n.className = 'nm'; n.textContent = e.name + ' — '; const rl = document.createElement('span'); rl.className = 'role-' + e.kind; rl.textContent = ROLE_INFO[e.kind].title + (e.alive ? '' : ' ☠'); n.appendChild(rl); d.appendChild(n); ro.appendChild(d); }
   $('win').classList.remove('hidden');
   const cf = $('confetti'); cf.innerHTML = ''; if (iWon) { const cols = ['#1fbf6b', '#ffd300', '#ff1a1a', '#b98cff', '#fff']; for (let i = 0; i < 70; i++) { const d = document.createElement('i'); d.style.left = Math.random() * 100 + '%'; d.style.background = cols[i % cols.length]; d.style.animationDuration = (2.5 + Math.random() * 2.5) + 's'; d.style.animationDelay = (Math.random() * 1.5) + 's'; d.style.transform = `rotate(${Math.random() * 360}deg)`; cf.appendChild(d); } }
 }
@@ -427,7 +429,7 @@ $('players-range').addEventListener('input', renderCrowd); renderCrowd();
 function resize() {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   canvas.width = Math.floor(innerWidth * dpr); canvas.height = Math.floor(innerHeight * dpr);
-  const targetW = innerWidth < 700 ? 620 : 1000; G.cam.zoom = canvas.width / targetW;
+  const small = innerWidth < 700 || innerHeight < 500; const tw = small ? 640 : 1000, th = small ? 760 : 620; G.cam.zoom = Math.max(canvas.width / tw, canvas.height / th);
 }
 window.addEventListener('resize', resize); resize();
 

@@ -61,7 +61,7 @@ function sabUpdate(dt) {
     s.t -= dt;
     const near = G.entities.filter(e => alive(e) && e.kind === 'venus' && Math.hypot(e.x - SAB.BELL.x, e.y - SAB.BELL.y) < 90);
     if (near.length >= 2) { SFX.play('bell'); endSabotage('🔔 O sino tocou! Os fantasmas voltaram pro sótão.'); }
-    else if (s.t <= 0) { endSabotage(''); endGame('demom'); }
+    else if (s.t <= 0) { endSabotage(''); G.result = 'ghosts'; endGame('demom'); }
   }
   else if (s.type === 'lights') {
     // conserto: um VENUS (bot) parado na caixa de força por 4 s; o jogador usa o minijogo

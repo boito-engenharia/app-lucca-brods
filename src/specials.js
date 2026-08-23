@@ -129,10 +129,13 @@ function releaseJailed(e) {
 function drawSpecials() {
   for (const sp of SPECIALS) {
     const pulse = (Math.sin(G.t * 3 + sp.x) + 1) / 2;
-    ctx.fillStyle = `rgba(${sp.color},${.18 + .18 * pulse})`; ctx.beginPath(); ctx.arc(sp.x, sp.y, 28 + pulse * 3, 0, 7); ctx.fill();
-    ctx.strokeStyle = `rgba(${sp.color},.9)`; ctx.lineWidth = 3; ctx.stroke();
-    ctx.font = '24px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.fillText(sp.icon, sp.x, sp.y + 1); ctx.textBaseline = 'alphabetic';
-    ctx.font = '900 11px Nunito, Arial'; ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillText(sp.name.toUpperCase(), sp.x, sp.y + 44);
+    ctx.strokeStyle = `rgba(${sp.color},${.5 + .4 * pulse})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(sp.x, sp.y + 8, 26, 12, 0, 0, 7); ctx.stroke();
+    const by = sp.y - 50 - pulse * 5;
+    ctx.fillStyle = `rgb(${sp.color})`; ctx.beginPath(); ctx.arc(sp.x, by, 17, 0, 7); ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sp.x - 6, by + 14); ctx.lineTo(sp.x + 6, by + 14); ctx.lineTo(sp.x, by + 22); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.font = '17px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#000'; ctx.fillText(sp.icon, sp.x, by + 1); ctx.textBaseline = 'alphabetic';
+    const dme = G.player ? Math.hypot(G.player.x - sp.x, G.player.y - sp.y) : 9e9; const la = Math.max(0, Math.min(1, (260 - dme) / 120));
+    if (la > 0) { ctx.globalAlpha = la; ctx.font = '900 11px Nunito, Arial'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)'; ctx.strokeText(sp.name.toUpperCase(), sp.x, sp.y + 34); ctx.fillStyle = '#fff'; ctx.fillText(sp.name.toUpperCase(), sp.x, sp.y + 34); ctx.globalAlpha = 1; }
   }
   // jaula: barras por cima dos presos
   const jailed = G.entities.filter(e => e.jailed);
