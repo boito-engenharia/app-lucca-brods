@@ -232,13 +232,14 @@ function update(dt) {
   // digestão
   for (const e of G.entities) if (e.swallowed && e.alive) { e.swallowT -= dt; if (e.swallowT <= 0) digest(e); }
   sabUpdate(dt); specialsUpdate(dt); printsUpdate(dt); fxUpdate(dt);
+  if (NET.host && NET.started) hostApplyInputs(dt);
   // bots
   for (const e of G.entities) if (e.isBot && alive(e)) aiUpdate(e, dt);
   aiNoticeBodies(dt);
   // interações do jogador
   updatePlayerNear();
   updateCooldownHud();
-  tutorialUpdate(dt); bossUpdate(dt);
+  tutorialUpdate(dt); bossUpdate(dt); hostSnapshot();
 }
 
 function updatePlayerNear() {
@@ -283,6 +284,7 @@ function updateCooldownHud() {
 
 // ---------- Ações do jogador ----------
 function playerUse() {
+  if (G.guest) return guestUse();
   if (G.phase !== 'play' || G.paused || G.inMinigame) return;
   const me = G.player, n = G.near; if (!n || !alive(me)) return;
   if (n.type === 'task') openMinigame(n.def, () => completeTask(me, n.task));
@@ -292,8 +294,8 @@ function playerUse() {
   else if (n.type === 'emergency') { if (SAB.active) { toast('O botão não funciona durante a sabotagem!'); return; } if (G.emergenciesLeft > 0 && G.meetingCd <= 0) { G.emergenciesLeft--; startMeeting({ type: 'emergency', reporter: me }); } else toast(G.meetingCd > 0 ? 'Espere um pouco para usar o botão' : 'Você já usou sua emergência'); }
   else if (n.type === 'secret') { if (BOSS.active) for (const b of BOSS.bosses) { b.stunT = 3; b.ai.path = []; } logEvent('🕳️', 'Você usou uma passagem secreta', 'sab'); spawnFx(me.x, me.y - 20, '#ffffff', 12, 100, .6); me.x = n.to.x; me.y = n.to.y; spawnFx(me.x, me.y - 20, '#ffffff', 12, 100, .6); SFX.play('teleport'); G.secretUses = (G.secretUses || 0) + 1; me.jumpT = .5; }
 }
-function playerReport() { if (G.phase !== 'play' || G.paused || G.inMinigame) return; if (G.nearBody && alive(G.player)) startMeeting({ type: 'body', reporter: G.player, body: G.nearBody }); }
-function playerKill() { if (G.phase !== 'play' || G.paused || G.inMinigame) return; const me = G.player; if (!alive(me) || me.kind === 'venus' || me.killCd > 0 || !G.nearTarget) return; if (me.kind === 'demom') killEntity(me, G.nearTarget); else swallowEntity(me, G.nearTarget); }
+function playerReport() { if (G.guest) return guestReport(); if (G.phase !== 'play' || G.paused || G.inMinigame) return; if (G.nearBody && alive(G.player)) startMeeting({ type: 'body', reporter: G.player, body: G.nearBody }); }
+function playerKill() { if (G.guest) return guestKill(); if (G.phase !== 'play' || G.paused || G.inMinigame) return; const me = G.player; if (!alive(me) || me.kind === 'venus' || me.killCd > 0 || !G.nearTarget) return; if (me.kind === 'demom') killEntity(me, G.nearTarget); else swallowEntity(me, G.nearTarget); }
 function onKey(e) {
   const k = e.key.toLowerCase();
   if (k === 'e' || k === 'enter') { if (G.phase === 'play' && !G.inMinigame) playerUse(); }
@@ -364,7 +366,7 @@ function completeTask(e, t) {
   if (e === G.player && TUT.active && TUT.step <= 1) tutorialSetStep(2);
   if (e === G.player && BOSS.active) { bossCheckObjectives(); }
   if (e === G.player) { renderTaskList(); if (e.kind !== 'venus') toast('Missão de mentira feita (só disfarce)'); }
-  else renderTaskList();
+  else { renderTaskList(); if (e.isRemote) hostTaskUpdate(e); }
   checkWin();
 }
 function taskProgress() { let tot = 0, done = 0; for (const e of G.entities) { if (e.kind !== 'venus' || !e.alive) continue; for (const t of e.tasks) { tot++; if (t.done) done++; } } return { tot, done }; }
@@ -375,6 +377,7 @@ function renderTaskList() {
   const title = me.kind === 'venus' ? 'MISSÕES' : (innerWidth < 700 ? 'DISFARCE' : 'MISSÕES · DISFARCE');
   $('task-title').firstChild.textContent = title + ' ';
   for (const t of me.tasks) { const d = TASK_BY_ID[t.id]; const li = document.createElement('li'); li.textContent = ROOM_BY_ID[d.room].name + ': ' + d.name; if (t.done) li.classList.add('done'); ul.appendChild(li); }
+  if (G.guest) return;
   const p = taskProgress(); const pct = p.tot ? Math.round(100 * p.done / p.tot) : 0;
   $('task-count').textContent = pct + '%'; $('task-fill').style.width = pct + '%';
 }
@@ -397,7 +400,7 @@ function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.rem
 
 // ---------- Vitória ----------
 function checkWin() {
-  if (G.phase === 'end' || BOSS.active || G.mode === 'boss') return;
+  if (G.phase === 'end' || BOSS.active || G.mode === 'boss' || G.guest) return;
   const V = countAlive('venus'), D = countAlive('demom'), C = countAlive('chefe');
   const p = taskProgress();
   let winner = null;
@@ -409,6 +412,7 @@ function checkWin() {
 }
 function endGame(winner) {
   if (G.phase === 'end') return;
+  hostEndGame(winner);
   G.phase = 'end'; closeMinigame(); $('meeting').classList.add('hidden'); $('eject').classList.add('hidden');
   const me = G.player; const iWon = me.kind === winner;
   MUSIC.stop(); SFX.play(iWon ? 'win' : 'lose'); checkMedalsEnd(winner);
@@ -434,7 +438,7 @@ function avatarCanvas(e, trueForm) {
 function togglePause() { G.paused = !G.paused; $('menu').classList.toggle('hidden', !G.paused); }
 function quitGame() {
   if (typeof M !== 'undefined' && M.active) { M.active = false; clearInterval(M.interval); M.interval = null; M.talkTimers.forEach(clearTimeout); M.talkTimers = []; }
-  closeMinigame(); G.paused = false; G.phase = 'start'; TUT.active = false; BOSS.active = false; restoreSettings(); G.mode = 'free'; hideHint();
+  closeMinigame(); G.paused = false; G.phase = 'start'; TUT.active = false; BOSS.active = false; restoreSettings(); G.mode = 'free'; hideHint(); if (NET.on || G.guest || G.netGame) { leaveRoom(); G.guest = false; G.netGame = false; NET.started = false; }
   for (const id of ['meeting', 'eject', 'menu', 'win', 'hud', 'timeline', 'reveal', 'minigame']) $(id).classList.add('hidden');
   $('start').classList.remove('hidden'); MUSIC.setMood('menu');
 }
@@ -451,6 +455,13 @@ $('btn-medals').addEventListener('click', () => { SFX.unlock(); openMedals(); })
 $('btn-win-medals').addEventListener('click', () => { openMedals(); });
 $('btn-win-timeline').addEventListener('click', () => { openTimeline(); });
 $('btn-tl-close').addEventListener('click', () => { $('timeline').classList.add('hidden'); });
+$('btn-online').addEventListener('click', () => { SFX.unlock(); MUSIC.setMood('menu'); openOnline(); });
+$('btn-online-close').addEventListener('click', () => { $('online').classList.add('hidden'); });
+$('btn-create-room').addEventListener('click', createRoom);
+$('btn-join-room').addEventListener('click', () => joinRoom($('join-code').value, false));
+$('join-code').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') joinRoom($('join-code').value, false); });
+$('btn-leave-room').addEventListener('click', () => { leaveRoom(); });
+$('btn-lobby-start').addEventListener('click', () => { SFX.unlock(); hostStartGame(); });
 $('btn-campaign').addEventListener('click', () => { SFX.unlock(); MUSIC.setMood('menu'); openCampaign(); });
 $('btn-camp-close').addEventListener('click', () => { $('campaign').classList.add('hidden'); });
 $('btn-tutorial').addEventListener('click', () => { SFX.unlock(); MUSIC.setMood('menu'); tutorialStart(); });
@@ -549,7 +560,8 @@ function loop(now) {
   const dt = Math.min(.05, (now - G.last) / 1000); G.last = now;
   if (G.phase === 'start' || G.phase === 'end') return;
   G.t += dt;
-  if (G.phase === 'play' && !G.paused && !G.inMinigame) update(dt);
+  if (G.phase === 'play' && !G.paused && !G.inMinigame) { if (G.guest) guestUpdate(dt); else update(dt); }
+  if (G.phase === 'meeting' && G.guest) { for (const e of G.entities) { if (e.tx !== undefined) { e.x += (e.tx - e.x) * .3; e.y += (e.ty - e.y) * .3; } } }
   render(); if (G.phase === 'play' && (G.frame = (G.frame || 0) + 1) % 6 === 0) drawMinimap();
 }
 

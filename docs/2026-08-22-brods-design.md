@@ -83,5 +83,8 @@ Tela de medalhas salva no aparelho (localStorage). Exemplos: "Detetive de Primei
 3. **Fatia 3** — sabotagens, passagens secretas, cômodos especiais (Livro dos Mortos, Galeria, Poção, Altar, Jaula).
 4. **Fatia 4** — visual final com os desenhos do Lucca, modo sombrio/lanterna, música adaptativa e efeitos, painel de ajustes, medalhas, polimento e publicação.
 
-## 15. Fora do escopo (por agora)
-Multijogador online · dois jogadores no mesmo aparelho · salvar partida no meio.
+## 15. Multijogador (adicionado em 23/08/2026)
+Sala por código (4 letras). Servidor relay na Cloudflare (Worker + Durable Object, pasta `server/`, `npx wrangler deploy` → https://brods-server.boito.workers.dev). O dono da sala roda o jogo; convidados enviam comandos e recebem a cena (12 snapshots/s). Reunião, chat e votação em rede. Quem sai vira bot.
+
+## 16. Fora do escopo (por agora)
+Dois jogadores no mesmo aparelho · salvar partida no meio · reconexão automática.

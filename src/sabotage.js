@@ -94,17 +94,18 @@ function updateSabBanner() {
 
 // ---------- Menu de sabotagem (jogador DEMOM) ----------
 function openSabMenu() {
-  const me = G.player; if (G.phase !== 'play' || G.inMinigame || me.kind !== 'demom' || !alive(me)) return;
+  const me = G.player; if (G.phase !== 'play' || G.inMinigame || me.kind !== 'demom' || !alive(me)) return; if (G.guest && SAB.active) { toast('Já tem uma sabotagem acontecendo.'); return; }
   G.inMinigame = true; SFX.play('open');
   const body = $('mg-body'); body.innerHTML = ''; body._cleanup = null; $('mg-title').textContent = '😈 Sabotagem';
-  if (!canSabotage(me)) body.appendChild(el('p', 'mg-instr', SAB.active ? 'Já tem uma sabotagem acontecendo.' : `Recarregando… ${Math.ceil(me.sabCd)} s`));
+  const can = G.guest ? (!SAB.active) : canSabotage(me);
+  if (!can) body.appendChild(el('p', 'mg-instr', SAB.active ? 'Já tem uma sabotagem acontecendo.' : `Recarregando… ${Math.ceil(me.sabCd)} s`));
   const row = el('div', 'sab-grid'); body.appendChild(row);
   for (const [k, info] of Object.entries(SAB_INFO)) {
     const b = el('button', 'sab-btn', `<span class="sab-ico">${info.icon}</span><b>${info.name}</b><small>${info.desc}</small>`);
-    b.disabled = !canSabotage(me);
+    b.disabled = !can;
     b.onclick = () => {
-      if (k === 'doors') { body.innerHTML = ''; body.appendChild(el('p', 'mg-instr', 'Trancar as portas de qual cômodo?')); const g = el('div', 'mg-row'); body.appendChild(g); for (const r of ROOMS) { const rb = el('button', 'small-btn', r.name); rb.onclick = () => { doSabotage(me, 'doors', r.id); closeMinigame(); }; g.appendChild(rb); } return; }
-      doSabotage(me, k); closeMinigame();
+      if (k === 'doors') { body.innerHTML = ''; body.appendChild(el('p', 'mg-instr', 'Trancar as portas de qual cômodo?')); const g = el('div', 'mg-row'); body.appendChild(g); for (const r of ROOMS) { const rb = el('button', 'small-btn', r.name); rb.onclick = () => { if (G.guest) guestSab('doors', r.id); else doSabotage(me, 'doors', r.id); closeMinigame(); }; g.appendChild(rb); } return; }
+      if (G.guest) guestSab(k); else doSabotage(me, k); closeMinigame();
     };
     row.appendChild(b);
   }

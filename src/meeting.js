@@ -24,6 +24,7 @@ function startMeeting(info) {
   renderMeetPlayers();
   M.phase = 'talk'; M.timer = SETTINGS.discussionTime; $('meet-status').textContent = 'Discussão'; updateTimer();
   $('meeting').classList.remove('hidden');
+  hostSnapshot(true); hostMeetingEvent('start', { type: info.type, reporter: info.reporter.id, victim: v ? v.id : null, title: $('meet-title').textContent, sys: $('chat-log').textContent, timer: M.timer });
   scheduleBotTalk();
   clearInterval(M.interval);
   M.interval = setInterval(meetTick, 1000);
@@ -31,17 +32,18 @@ function startMeeting(info) {
 function updateTimer() { $('meet-timer').textContent = M.timer; }
 function meetTick() {
   M.timer--; updateTimer();
-  if (M.phase === 'talk' && M.timer <= 0) { M.phase = 'vote'; M.timer = SETTINGS.voteTime; $('meet-status').textContent = alive(G.player) ? 'VOTAÇÃO — toque em alguém ou pule' : 'VOTAÇÃO'; $('btn-skip').disabled = !alive(G.player); SFX.play('drum'); MUSIC.setMood('vote'); renderMeetPlayers(); scheduleBotVotes(); }
+  if (M.phase === 'talk' && M.timer <= 0) { M.phase = 'vote'; M.timer = SETTINGS.voteTime; hostMeetingEvent('phase', { phase: 'vote', timer: M.timer }); $('meet-status').textContent = alive(G.player) ? 'VOTAÇÃO — toque em alguém ou pule' : 'VOTAÇÃO'; $('btn-skip').disabled = !alive(G.player); SFX.play('drum'); MUSIC.setMood('vote'); renderMeetPlayers(); scheduleBotVotes(); }
   else if (M.phase === 'vote') {
     const voters = G.entities.filter(e => alive(e)); const allVoted = voters.every(e => M.votes.has(e.id));
     if (M.timer <= 0 || allVoted) { clearInterval(M.interval); M.interval = null; finishVote(); }
   }
 }
-function sysLine(t) { const d = document.createElement('div'); d.className = 'bub sys'; d.textContent = t; $('chat-log').appendChild(d); $('chat-log').scrollTop = 1e9; }
+function sysLine(t) { const d = document.createElement('div'); d.className = 'bub sys'; d.textContent = t; $('chat-log').appendChild(d); $('chat-log').scrollTop = 1e9; if (M.active && !G.guest && !/^Você /.test(t)) hostMeetingEvent('sys', { text: t }); }
 function say(e, text) {
   const d = document.createElement('div'); d.className = 'bub' + (e === G.player ? ' me' : '');
   const b = document.createElement('b'); b.textContent = e.name + ':'; b.style.color = e === G.player ? '#ffd300' : e.color.css; d.appendChild(b); d.appendChild(document.createTextNode(text));
   $('chat-log').appendChild(d); $('chat-log').scrollTop = 1e9; SFX.play('tick');
+  if (!G.guest) hostMeetingEvent('say', { eid: e.id, text });
 }
 function renderMeetPlayers() {
   const box = $('meet-players'); box.innerHTML = '';
@@ -58,8 +60,9 @@ function renderMeetPlayers() {
   }
 }
 function castVote(voter, targetId) {
+  if (G.guest) { if (voter === G.player && M.phase === 'vote' && !M.playerVoted) { M.playerVoted = true; $('btn-skip').disabled = true; netSend({ t: 'vote', target: targetId }); } return; }
   if (M.phase !== 'vote' || M.votes.has(voter.id)) return;
-  M.votes.set(voter.id, targetId); if (targetId === G.player.id && voter !== G.player) G.votesAgainstMe = (G.votesAgainstMe || 0) + 1;
+  M.votes.set(voter.id, targetId); if (targetId === G.player.id && voter !== G.player) G.votesAgainstMe = (G.votesAgainstMe || 0) + 1; hostMeetingEvent('vote', { voter: voter.id, target: targetId });
   if (voter === G.player) { M.playerVoted = true; $('btn-skip').disabled = true; sysLine(targetId === 'skip' ? 'Você pulou o voto.' : 'Você votou em ' + G.entities.find(e => e.id === targetId).name + '.'); }
   SFX.play('drum'); renderMeetPlayers();
 }
@@ -70,14 +73,18 @@ $('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.pr
 // ---------- Fala do jogador e reações ----------
 function playerSays() {
   const inp = $('chat-input'); const text = inp.value.trim(); if (!text || !alive(G.player) || !M.active) return; inp.value = '';
-  say(G.player, text);
+  if (G.guest) { netSend({ t: 'say', text }); return; }
+  humanSays(G.player, text);
+}
+function humanSays(speaker, text) {
+  say(speaker, text);
   const low = text.toLowerCase();
-  const named = G.entities.filter(e => e !== G.player && low.includes(e.name.toLowerCase()));
+  const named = G.entities.filter(e => e !== speaker && low.includes(e.name.toLowerCase()));
   const roomsNamed = ROOMS.filter(r => low.includes(r.name.toLowerCase().split(' ')[0]));
   const accusing = /(foi|acuso|suspeit|desconf|matou|mentir|culpad|vi o|vi a|estranho|votem|vota)/.test(low);
   const defending = /(não fui|nao fui|inocente|eu estava|tava)/.test(low) && !named.length;
   if (named.length && accusing) {
-    for (const x of named) { M.accusations.push({ by: G.player, who: x }); bump(x, 40); }
+    for (const x of named) { M.accusations.push({ by: speaker, who: x }); bump(x, 40); }
     const x = named[0];
     setTimeout(() => { if (!M.active) return; if (x.isBot && alive(x)) { if (x.kind === 'venus') say(x, pick([`Eu?! Não fui eu! Eu estava ${placeOf(x)}.`, `Que isso, eu sou inocente! Eu estava ${placeOf(x)}.`, `Não fui eu! Alguém me viu ${placeOf(x)}?`])); else say(x, pick([`Mentira! Eu estava ${fakePlace(x)}. Desconfio é de você!`, `Eu?? Você que está estranho… eu estava ${fakePlace(x)}.`, `Prova? Eu estava ${fakePlace(x)} o tempo todo!`])); } }, 900);
     // outros reagem
@@ -156,6 +163,7 @@ function finishVote() {
   let best = null, bc = 0, tie = false; for (const [t, c] of tally) { if (c > bc) { best = t; bc = c; tie = false; } else if (c === bc) tie = true; }
   const ejected = (best && best !== 'skip' && !tie) ? G.entities.find(e => e.id === best) : null;
   $('meeting').classList.add('hidden'); M.active = false;
+  hostMeetingEvent('end', { ejected: ejected ? ejected.id : null, role: ejected ? ejected.kind : null });
   showEject(ejected, () => {
     logEvent(ejected ? '🗳️' : '🤷', ejected ? `${ejected.name} foi expulso — era ${ROLE_INFO[ejected.kind].title}${ejected.kind === 'venus' ? ' (inocente!)' : ''}` : 'Votação terminou sem expulsão', ejected && ejected.kind === 'venus' ? 'lie' : 'meet');
     if (ejected) {
