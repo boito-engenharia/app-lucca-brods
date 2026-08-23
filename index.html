@@ -2826,9 +2826,9 @@ function tutorialUpdate(dt) {
     if (me.tasks.some(t => t.done)) { tutorialSetStep(2); return; }
     if (!(G.near && G.near.type === 'task')) { tutorialSetStep(0); return; }
   } else if (TUT.step === 2) {
-    if (!TUT.bodyDone) { tutorialKill(); TUT.bodyDone = true; }
+    if (!TUT.bodyDone) { tutorialKill(); TUT.bodyDone = true; TUT.killAt = G.t; }
     const b = G.bodies[0]; TUT.target = b ? { x: b.x, y: b.y } : null;
-    if (!b) { tutorialSetStep(4); }
+    if (!b && G.t - TUT.killAt > 4) { tutorialSetStep(4); }
   } else if (TUT.step === 3) {
     // volta do meeting → passo 4
     tutorialSetStep(4);
