@@ -512,6 +512,7 @@ $('loading-logo').src = SPRITE_DATA.logo_word || SPRITE_DATA.logo_main;
 loadSprites().then(() => {
   $('loading').classList.add('hidden');
   $('start-logo').src = SPRITE_DATA.logo_main;
+  if (SPRITE_DATA.room_start) { $('start').classList.add('art'); $('start').style.backgroundImage = `linear-gradient(rgba(10,5,25,.15), rgba(10,5,25,.55) 70%, rgba(10,5,25,.9)), url(${SPRITE_DATA.room_start})`; }
   document.querySelectorAll('[data-sprite]').forEach(im => im.src = SPRITE_DATA[im.dataset.sprite]);
   G.last = performance.now(); requestAnimationFrame(loop);
 });

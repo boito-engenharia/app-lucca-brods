@@ -2,8 +2,8 @@
 'use strict';
 
 const SAB = {
-  POWER: { x: 420, y: 1000 },     // caixa de força (Porão)
-  BELL: { x: 940, y: 1220 },      // sino (Capela)
+  POWER: { x: 290, y: 975 },      // caixa de força (Porão)
+  BELL: { x: 940, y: 1200 },      // sino (Capela)
   active: null,                   // {type, t, room?, fixers:Set}
   blocked: [],                    // retângulos bloqueados (portas trancadas)
 };

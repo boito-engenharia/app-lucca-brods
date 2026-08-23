@@ -347,3 +347,7 @@ body.touch #minimap{width:130px;height:70px}
 #reveal.venus{background:radial-gradient(circle at 50% 38%,rgba(255,211,0,.22),#000 62%)}
 #reveal.demom{background:radial-gradient(circle at 50% 38%,rgba(255,26,26,.25),#000 62%)}
 #reveal.chefe{background:radial-gradient(circle at 50% 38%,rgba(185,140,255,.25),#000 62%)}
+
+#start.art{background-size:cover;background-position:center 30%;background-repeat:no-repeat}
+#start.art::before{display:none}
+#start.art::after{opacity:.6}

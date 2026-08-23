@@ -9,12 +9,12 @@ const ROOMS = [
   { id:'sotao',       name:'Sótão',              x:440,  y:60,  w:420, h:260, floor:'#6b4a2e', wall:'#3a2815' },
   { id:'quarto',      name:'Quarto Principal',   x:960,  y:60,  w:420, h:260, floor:'#5a3a6e', wall:'#2e1d3a' },
   { id:'galeria',     name:'Galeria de Quadros', x:1480, y:60,  w:580, h:260, floor:'#7a3b3b', wall:'#3d1c1c' },
-  { id:'biblioteca',  name:'Biblioteca',         x:80,   y:460, w:460, h:340, floor:'#7a5230', wall:'#3a2612' },
+  { id:'biblioteca',  name:'Biblioteca',         x:80,   y:460, w:460, h:300, floor:'#7a5230', wall:'#3a2612' },
   { id:'salao',       name:'Salão de Entrada',   x:700,  y:420, w:640, h:420, floor:'#5e2d74', wall:'#2c1438' },
-  { id:'jantar',      name:'Sala de Jantar',     x:1480, y:460, w:420, h:340, floor:'#8a4a2a', wall:'#3f2010' },
+  { id:'jantar',      name:'Sala de Jantar',     x:1480, y:460, w:420, h:300, floor:'#8a4a2a', wall:'#3f2010' },
   { id:'cozinha',     name:'Cozinha',            x:2000, y:460, w:380, h:340, floor:'#3e5a66', wall:'#1d2b31' },
   { id:'porao',       name:'Porão',              x:80,   y:940, w:420, h:300, floor:'#3a3a44', wall:'#17171c' },
-  { id:'capela',      name:'Capela',             x:620,  y:960, w:360, h:300, floor:'#5a4a7a', wall:'#2a2240' },
+  { id:'capela',      name:'Capela',             x:620,  y:960, w:360, h:330, floor:'#5a4a7a', wall:'#2a2240' },
   { id:'jardim',      name:'Jardim',             x:1100, y:940, w:520, h:320, floor:'#2f6b3a', wall:'#173a1d' },
   { id:'laboratorio', name:'Laboratório',        x:1740, y:940, w:440, h:300, floor:'#2f5e5a', wall:'#132a28' },
 ];
@@ -32,10 +32,10 @@ const CORRIDORS = [
   { x:540,  y:590, w:160, h:90 },   // biblioteca ↔ salao
   { x:1340, y:590, w:140, h:90 },   // salao ↔ jantar
   { x:1900, y:590, w:100, h:90 },   // jantar ↔ cozinha
-  { x:250,  y:800, w:90,  h:140 },  // biblioteca ↓ porao
+  { x:250,  y:760, w:90,  h:180 },  // biblioteca ↓ porao
   { x:760,  y:840, w:90,  h:120 },  // salao ↓ capela
   { x:1200, y:840, w:90,  h:100 },  // salao ↓ jardim
-  { x:1800, y:800, w:90,  h:140 },  // jantar ↓ laboratorio
+  { x:1800, y:760, w:90,  h:180 },  // jantar ↓ laboratorio
   { x:500,  y:1050, w:120, h:90 },  // porao ↔ capela
   { x:980,  y:1050, w:120, h:90 },  // capela ↔ jardim
   { x:1620, y:1050, w:120, h:90 },  // jardim ↔ laboratorio
@@ -43,18 +43,18 @@ const CORRIDORS = [
 
 // Estações (pontos onde as missões acontecem), por cômodo
 const STATIONS = {
-  torre:       [[210,140],[130,250],[300,230],[300,110]],
-  sotao:       [[780,130],[500,120],[650,270],[820,270]],
-  quarto:      [[1300,120],[1020,130],[1150,270],[1350,270]],
-  galeria:     [[1770,120],[1560,260],[1950,260],[2030,120]],
-  biblioteca:  [[300,560],[140,720],[460,720],[120,520]],
-  salao:       [[1020,470],[760,780],[1280,780],[1300,480],[740,480]],
-  jantar:      [[1690,560],[1520,500],[1860,740],[1520,740]],
-  cozinha:     [[2300,540],[2060,500],[2150,760],[2340,760]],
-  porao:       [[420,1000],[120,1000],[300,1000],[150,1190]],
-  capela:      [[800,1040],[660,1220],[940,1220],[660,1000]],
-  jardim:      [[1520,1190],[1180,1000],[1300,1050],[1400,1220],[1180,1190]],
-  laboratorio: [[1960,1020],[2100,1000],[1800,1000],[1900,1200]],
+  torre:       [[170,150],[150,262],[290,110],[210,92]],
+  sotao:       [[690,190],[480,120],[560,112],[520,80]],
+  quarto:      [[1300,130],[1060,150],[1330,215],[1080,228]],
+  galeria:     [[1770,108],[1520,150],[1950,108],[1650,108]],
+  biblioteca:  [[300,512],[150,530],[205,515],[455,690],[320,600]],
+  salao:       [[820,480],[790,570],[1020,800],[1020,560],[1020,730]],
+  jantar:      [[1690,600],[1690,486],[1530,560],[1860,620]],
+  cozinha:     [[2190,600],[2090,510],[2190,492],[2330,600]],
+  porao:       [[290,975],[150,990],[290,1090],[400,1180]],
+  capela:      [[800,1022],[680,1000],[760,1150],[940,1200]],
+  jardim:      [[1350,1230],[1200,1060],[1540,1030],[1440,1090],[1180,1000]],
+  laboratorio: [[2120,1150],[2120,1000],[1800,1000],[2120,1000]],
 };
 
 // Catálogo de MISSÕES (muitas, pra não enjoar). game = motor do minijogo em minigames.js; p = parâmetros.
@@ -128,12 +128,12 @@ const TASK_BY_ID = Object.fromEntries(TASKS.map(t => [t.id, t]));
 function taskPos(t) { const s = STATIONS[t.room][t.st]; return { x: s[0], y: s[1] }; }
 
 // Botão de emergência (Salão)
-const EMERGENCY = { x: 1020, y: 690 };
+const EMERGENCY = { x: 1020, y: 650 };
 
 // Passagens secretas (só DEMOM e CHEFE)
 const SECRET = [
   { a:'biblioteca', b:'porao',  ax:500, ay:760, bx:460, by:1200 },
-  { a:'cozinha',    b:'sotao',  ax:2040, ay:760, bx:480, by:290 },
+  { a:'cozinha',    b:'sotao',  ax:2040, ay:760, bx:500, by:270 },
 ];
 
 // Cores dos VENUS (o amarelo é o original; os outros recolorem o sprite)

@@ -2,14 +2,14 @@
 'use strict';
 
 const SPECIALS = [
-  { id: 'book',   room: 'cozinha',     x: 2200, y: 630,  icon: '📖', name: 'Livro dos Mortos',        color: '185,140,255' },
-  { id: 'eyes',   room: 'galeria',     x: 1700, y: 250,  icon: '👁️', name: 'Olhos dos quadros',       color: '255,120,120' },
-  { id: 'potion', room: 'laboratorio', x: 1850, y: 1110, icon: '🧪', name: 'Poção de Escudo',         color: '120,255,200' },
-  { id: 'altar',  room: 'capela',      x: 870,  y: 1000, icon: '✨', name: 'Altar da Segunda Chance', color: '255,230,120' },
-  { id: 'cage',   room: 'porao',       x: 300,  y: 1160, icon: '🔒', name: 'Jaula',                   color: '200,200,220' },
+  { id: 'book',   room: 'cozinha',     x: 2280, y: 740,  icon: '📖', name: 'Livro dos Mortos',        color: '185,140,255' },
+  { id: 'eyes',   room: 'galeria',     x: 1740, y: 200,  icon: '👁️', name: 'Olhos dos quadros',       color: '255,120,120' },
+  { id: 'potion', room: 'laboratorio', x: 1800, y: 1110, icon: '🧪', name: 'Poção de Escudo',         color: '120,255,200' },
+  { id: 'altar',  room: 'capela',      x: 800,  y: 985, icon: '✨', name: 'Altar da Segunda Chance', color: '255,230,120' },
+  { id: 'cage',   room: 'porao',       x: 150,  y: 1120, icon: '🔒', name: 'Jaula',                   color: '200,200,220' },
 ];
 const SP = { eyesCd: 0, potionUsed: false, altarUsed: false, bookReads: 0 };
-const CAGE_POS = { x: 310, y: 1165 };
+const CAGE_POS = { x: 145, y: 1115 };
 
 function specialsReset() { SP.eyesCd = 0; SP.potionUsed = false; SP.altarUsed = false; SP.bookReads = 0; }
 function specialAvailable(sp) {
@@ -108,7 +108,7 @@ function openAltar() {
   $('minigame').classList.remove('hidden');
 }
 function revive(d) {
-  SP.altarUsed = true; d.alive = true; d.ghost = false; d.digested = false; d.swallowed = false; d.x = 870; d.y = 1060; d.speed = d.isBot ? SETTINGS.botSpeed : SETTINGS.playerSpeed;
+  SP.altarUsed = true; d.alive = true; d.ghost = false; d.digested = false; d.swallowed = false; d.x = 800; d.y = 1060; d.speed = d.isBot ? SETTINGS.botSpeed : SETTINGS.playerSpeed;
   if (d.isBot) { d.ai.state = 'idle'; d.ai.wait = 1; d.ai.witness = null; } else { $('ghost-note').classList.add('hidden'); toast('Você voltou à vida!'); }
   G.bodies = G.bodies.filter(b => b.ent !== d); spawnFx(d.x, d.y - 30, '#ffd300', 24, 150, 1);
   SFX.play('bell'); toast(`✨ ${d.name} voltou à vida! O sino tocou na Capela…`); renderTaskList(); unlockMedal('reviver');
@@ -120,7 +120,7 @@ function revive(d) {
 // ---------- Jaula ----------
 function jailEntity(e) { e.jailed = true; e.alive = false; e.ghost = false; e.moving = false; e.x = CAGE_POS.x + (Math.random() - .5) * 40; e.y = CAGE_POS.y + (Math.random() - .5) * 20; }
 function releaseJailed(e) {
-  e.jailed = false; e.alive = true; e.ghost = false; e.ejected = false; e.x = 300; e.y = 1050;
+  e.jailed = false; e.alive = true; e.ghost = false; e.ejected = false; e.x = 250; e.y = 1050;
   if (e.isBot) { e.ai.state = 'idle'; e.ai.wait = 1; } else { $('ghost-note').classList.add('hidden'); toast('Você foi solto da Jaula!'); }
   SFX.play('ok'); toast(`🔓 ${e.name} foi solto da Jaula!`); renderTaskList(); checkWin();
 }

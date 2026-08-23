@@ -10,7 +10,7 @@ const bgStars = Array.from({ length: 90 }, () => ({ x: Math.random() * WORLD.w *
 
 // ---------- Camada estática (chão + paredes + móveis fixos) ----------
 const MAP_SCALE = 1.25;
-let mapLayer = null;
+let mapLayer = null, _ground = null;
 function buildMapLayer() {
   const c = document.createElement('canvas'); c.width = Math.ceil((WORLD.w + 200) * MAP_SCALE); c.height = Math.ceil((WORLD.h + 200) * MAP_SCALE);
   const x = c.getContext('2d'); x.scale(MAP_SCALE, MAP_SCALE); x.translate(100, 100);
@@ -21,7 +21,9 @@ function buildMapLayer() {
   for (const r of ROOMS) { x.fillStyle = r.wall; rrc(x, r.x - WALL, r.y - WALL, r.w + 2 * WALL, r.h + 2 * WALL, 10); x.fill(); x.save(); x.clip(); x.fillStyle = stonePatternFor(x); x.fillRect(r.x - WALL, r.y - WALL, r.w + 2 * WALL, r.h + 2 * WALL); x.restore(); }
   for (const cr of CORRIDORS) { x.fillStyle = '#2a1f3a'; x.fillRect(cr.x - WALL, cr.y - WALL, cr.w + 2 * WALL, cr.h + 2 * WALL); x.save(); x.beginPath(); x.rect(cr.x - WALL, cr.y - WALL, cr.w + 2 * WALL, cr.h + 2 * WALL); x.clip(); x.fillStyle = stonePatternFor(x); x.fillRect(cr.x - WALL, cr.y - WALL, cr.w + 2 * WALL, cr.h + 2 * WALL); x.restore(); }
   // chão dos corredores: pedra escura com tapete vermelho no meio
+  const corArt = SPRITES['room_corredor'];
   for (const cr of CORRIDORS) {
+    if (corArt) { const horiz = cr.w > cr.h; x.save(); x.beginPath(); x.rect(cr.x, cr.y, cr.w, cr.h); x.clip(); x.filter = 'brightness(1.9) saturate(1.1)'; if (horiz) { x.translate(cr.x, cr.y + cr.h); x.rotate(-Math.PI / 2); const S = cr.h; for (let k = 0; k < cr.w; k += S) x.drawImage(corArt, 0, k, S, S); } else { const S = cr.w; for (let k = 0; k < cr.h; k += S) x.drawImage(corArt, cr.x, cr.y + k, S, S); } x.restore(); continue; }
     floorStone(x, cr.x, cr.y, cr.w, cr.h, '#3e3350', '#2a2238');
     const horiz = cr.w > cr.h;
     x.fillStyle = '#7a1f2a'; if (horiz) x.fillRect(cr.x, cr.y + cr.h * .3, cr.w, cr.h * .4); else x.fillRect(cr.x + cr.w * .3, cr.y, cr.w * .4, cr.h);
@@ -29,8 +31,7 @@ function buildMapLayer() {
   }
   // chão dos cômodos
   for (const r of ROOMS) {
-    const art = SPRITES['room_' + r.id];
-    if (art) { x.drawImage(art, r.x, r.y, r.w, r.h); continue; }
+    if (SPRITES['room_' + r.id]) continue;
     switch (r.id) {
       case 'biblioteca': case 'jantar': case 'quarto': case 'sotao': floorWood(x, r); break;
       case 'salao': case 'galeria': floorMarble(x, r); break;
@@ -40,13 +41,25 @@ function buildMapLayer() {
       default: x.fillStyle = r.floor; x.fillRect(r.x, r.y, r.w, r.h);
     }
   }
+  // arte dos cômodos (cobre chão + paredes)
+  for (const r of ROOMS) { const art = SPRITES['room_' + r.id]; if (!art) continue; x.save(); rrc(x, r.x - WALL, r.y - WALL, r.w + 2 * WALL, r.h + 2 * WALL, 12); x.clip(); x.drawImage(art, r.x - WALL, r.y - WALL, r.w + 2 * WALL, r.h + 2 * WALL); x.restore(); }
+  // corredores por cima da arte (abrem as portas)
+  for (const cr of CORRIDORS) {
+    if (corArt) { const horiz = cr.w > cr.h; x.save(); x.beginPath(); x.rect(cr.x, cr.y, cr.w, cr.h); x.clip(); x.filter = 'brightness(1.9) saturate(1.1)'; if (horiz) { x.translate(cr.x, cr.y + cr.h); x.rotate(-Math.PI / 2); const S = cr.h; for (let k = 0; k < cr.w; k += S) x.drawImage(corArt, 0, k, S, S); } else { const S = cr.w; for (let k = 0; k < cr.h; k += S) x.drawImage(corArt, cr.x, cr.y + k, S, S); } x.restore(); }
+    else { floorStone(x, cr.x, cr.y, cr.w, cr.h, '#3e3350', '#2a2238'); const horiz = cr.w > cr.h; x.fillStyle = '#7a1f2a'; if (horiz) x.fillRect(cr.x, cr.y + cr.h * .3, cr.w, cr.h * .4); else x.fillRect(cr.x + cr.w * .3, cr.y, cr.w * .4, cr.h); }
+    // sombra de porta nas pontas do corredor
+    const horiz = cr.w > cr.h; let g;
+    if (horiz) { g = x.createLinearGradient(cr.x, 0, cr.x + 30, 0); g.addColorStop(0, 'rgba(0,0,0,.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(cr.x, cr.y, 30, cr.h); g = x.createLinearGradient(cr.x + cr.w - 30, 0, cr.x + cr.w, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.55)'); x.fillStyle = g; x.fillRect(cr.x + cr.w - 30, cr.y, 30, cr.h); }
+    else { g = x.createLinearGradient(0, cr.y, 0, cr.y + 30); g.addColorStop(0, 'rgba(0,0,0,.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(cr.x, cr.y, cr.w, 30); g = x.createLinearGradient(0, cr.y + cr.h - 30, 0, cr.y + cr.h); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.55)'); x.fillStyle = g; x.fillRect(cr.x, cr.y + cr.h - 30, cr.w, 30); }
+  }
   // portas (batentes) nas passagens
   for (const cr of CORRIDORS) for (const r of ROOMS) {
     const x0 = Math.max(r.x, cr.x), x1 = Math.min(r.x + r.w, cr.x + cr.w), y0 = Math.max(r.y, cr.y), y1 = Math.min(r.y + r.h, cr.y + cr.h);
     if (x1 >= x0 && y1 >= y0) { x.fillStyle = '#1b1226'; if (x1 - x0 > y1 - y0) { x.fillRect(x0 - 10, y0 - 5, 10, 10); x.fillRect(x1, y0 - 5, 10, 10); } else { x.fillRect(x0 - 5, y0 - 10, 10, 10); x.fillRect(x0 - 5, y1, 10, 10); } }
   }
-  // rodapé / sombra interna das paredes
+  // rodapé / sombra interna das paredes (só sem arte)
   for (const r of ROOMS) {
+    if (SPRITES['room_' + r.id]) continue;
     let g = x.createLinearGradient(0, r.y, 0, r.y + 34); g.addColorStop(0, 'rgba(0,0,0,.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(r.x, r.y, r.w, 34);
     g = x.createLinearGradient(r.x, 0, r.x + 18, 0); g.addColorStop(0, 'rgba(0,0,0,.3)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(r.x, r.y, 18, r.h);
     g = x.createLinearGradient(r.x + r.w - 18, 0, r.x + r.w, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.3)'); x.fillStyle = g; x.fillRect(r.x + r.w - 18, r.y, 18, r.h);
@@ -216,6 +229,7 @@ function drawMap() {
   if (!mapLayer) buildMapLayer();
   // fundo externo (noite)
   ctx.fillStyle = '#0e0820'; ctx.fillRect(-2000, -2000, WORLD.w + 4000, WORLD.h + 4000);
+  if (SPRITES['room_fundo']) { if (!_ground) _ground = ctx.createPattern(SPRITES['room_fundo'], 'repeat'); ctx.save(); ctx.fillStyle = _ground; ctx.scale(.5, .5); ctx.fillRect(-4000, -4000, (WORLD.w + 4000) * 2, (WORLD.h + 4000) * 2); ctx.restore(); }
   ctx.fillStyle = '#fff'; for (const s of bgStars) { ctx.globalAlpha = .5 + .5 * Math.sin(G.t * 2 + s.x); ctx.fillRect(s.x, s.y, s.s, s.s); } ctx.globalAlpha = 1;
   // lua com halo
   let g = ctx.createRadialGradient(WORLD.w - 120, -60, 60, WORLD.w - 120, -60, 220); g.addColorStop(0, 'rgba(244,239,194,.25)'); g.addColorStop(1, 'rgba(244,239,194,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(WORLD.w - 120, -60, 220, 0, 7); ctx.fill();
@@ -246,9 +260,26 @@ function drawMap() {
 
 // ---------- Iluminação (escuridão + luzes) ----------
 const lightCanvas = document.createElement('canvas');
+const ART_LIGHTS = [
+  { x: 1020, y: 520, r: 300, c: '255,190,90', f: 1 },   // lustre do salão
+  { x: 2190, y: 630, r: 220, c: '120,255,120', f: 1 },  // caldeirão
+  { x: 1690, y: 486, r: 240, c: '255,140,40', f: 1 },   // lareira do jantar
+  { x: 1960, y: 990, r: 200, c: '255,150,60', f: 1 },   // lareira do laboratório
+  { x: 800, y: 1010, r: 220, c: '255,210,120', f: 1 },  // altar
+  { x: 690, y: 95, r: 160, c: '150,180,255', f: 0 },    // janela do sótão
+  { x: 1310, y: 130, r: 180, c: '150,180,255', f: 0 },  // janela do quarto
+  { x: 1860, y: 540, r: 150, c: '150,180,255', f: 0 },  // janela do jantar
+  { x: 210, y: 95, r: 170, c: '150,180,255', f: 0 },    // janela da torre
+  { x: 1800, y: 1000, r: 150, c: '150,180,255', f: 0 }, // janela do lab
+  { x: 290, y: 975, r: 140, c: '255,220,80', f: 1 },    // caixa de força
+  { x: 1440, y: 1090, r: 160, c: '140,180,255', f: 0 }, // fonte
+  { x: 1540, y: 1000, r: 140, c: '255,160,60', f: 1 },  // cripta do jardim
+];
 function lightSources() {
   const L = [];
-  for (const d of DECOR) {
+  const hasArt = ROOMS.some(r => SPRITES['room_' + r.id]);
+  if (hasArt) { for (const l of ART_LIGHTS) L.push(l); }
+  else for (const d of DECOR) {
     if (d.type === 'candel') L.push({ x: d.x, y: d.y - 10, r: 200, c: '255,180,60', f: 1 });
     else if (d.type === 'window') L.push({ x: d.x + d.w / 2, y: d.y + d.h + 40, r: 230, c: '160,190,255', f: 0 });
     else if (d.type === 'cauldron') L.push({ x: d.x, y: d.y - 10, r: 180, c: '120,255,120', f: 1 });
@@ -273,7 +304,8 @@ function drawLighting() {
   const x = lc.getContext('2d');
   x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over';
   const darkMe = G.dark && G.player && G.player.kind !== 'demom' && G.player.alive;
-  x.fillStyle = darkMe ? 'rgba(4,0,14,.97)' : 'rgba(10,4,28,.42)'; x.fillRect(0, 0, lc.width, lc.height);
+  const hasArt = !!SPRITES['room_salao'];
+  x.fillStyle = darkMe ? 'rgba(4,0,14,.97)' : (hasArt ? 'rgba(10,4,28,.24)' : 'rgba(10,4,28,.42)'); x.fillRect(0, 0, lc.width, lc.height);
   const z = G.cam.zoom; x.setTransform(z, 0, 0, z, lc.width / 2 - G.cam.x * z, lc.height / 2 - G.cam.y * z);
   x.globalCompositeOperation = 'destination-out';
   const flick = .9 + Math.sin(G.t * 13) * .05 + Math.sin(G.t * 29) * .05;
