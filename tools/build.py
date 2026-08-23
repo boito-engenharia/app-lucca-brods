@@ -41,4 +41,6 @@ html = html.replace('/*__JS__*/', js)
 with open(OUT, 'w', encoding='utf-8') as f:
     f.write(html)
 import shutil; shutil.copyfile(OUT, os.path.join(ROOT, 'index.html')); os.makedirs(os.path.join(ROOT, 'public'), exist_ok=True); shutil.copyfile(OUT, os.path.join(ROOT, 'public', 'index.html'))
+for f in ['apple-touch-icon.png','icon-192.png','icon-512.png','icon-512-maskable.png','favicon.png','manifest.webmanifest']:
+    shutil.copyfile(os.path.join(ROOT, f), os.path.join(ROOT, 'public', f))
 print('ok ->', OUT, f'{os.path.getsize(OUT)//1024} KB', '(+ index.html)')
