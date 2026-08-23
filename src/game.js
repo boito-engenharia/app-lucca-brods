@@ -110,6 +110,8 @@ const joy = { active: false, id: null, cx: 0, cy: 0, dx: 0, dy: 0 };
   zone.addEventListener('pointermove', move); zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end);
 })();
 $('btn-use').addEventListener('click', () => { SFX.unlock(); playerUse(); });
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+canvas.addEventListener('mousedown', e => { if (G.phase !== 'play' || G.inMinigame || G.paused) return; SFX.unlock(); if (e.button === 2) { playerReport(); return; } if (e.button === 0) { const me = G.player; if (me.kind !== 'venus' && G.nearTarget && me.killCd <= 0) playerKill(); else if (G.near) playerUse(); else if (G.nearBody) playerReport(); } });
 $('btn-report').addEventListener('click', () => { SFX.unlock(); playerReport(); });
 $('btn-kill').addEventListener('click', () => { SFX.unlock(); playerKill(); });
 $('btn-sab').addEventListener('click', () => { SFX.unlock(); openSabMenu(); });
@@ -147,8 +149,8 @@ function newGame() {
   buildWalk(); buildNav(); mapLayer = null; _lights = null; lightStatic = null;
   const N = SETTINGS.players = +$('players-range').value;
   // sorteio do papel do jogador (50% VENUS, 25% DEMOM, 25% CHEFE)
-  const r = Math.random(); const myRole = G.forceRole || (r < .5 ? 'venus' : r < .75 ? 'demom' : 'chefe'); G.forceRole = null; G.events = [];
-  const colors = VENUS_COLORS.slice();
+  const r = Math.random(); const pickRole = localStorage.getItem('brods_role') || 'random'; const myRole = G.forceRole || (pickRole !== 'random' ? pickRole : (r < .5 ? 'venus' : r < .75 ? 'demom' : 'chefe')); G.forceRole = null; G.events = [];
+  const colors = VENUS_COLORS.slice(); { const ci = +(localStorage.getItem('brods_color') || 0); if (ci > 0 && ci < colors.length) { const c = colors.splice(ci, 1)[0]; colors.unshift(c); } }
   const ents = [];
   const me = makeEntity(myRole, colors.shift(), false); me.name = playerName(); ents.push(me);
   const roles = []; const nDem = (N >= 10 && SETTINGS.demomCount >= 2) ? 2 : 1; for (let i = 0; i < nDem - (myRole === 'demom' ? 1 : 0); i++) roles.push('demom'); if (myRole !== 'chefe') roles.push('chefe'); while (roles.length < N - 1) roles.push('venus');
@@ -168,7 +170,8 @@ function newGame() {
   G.phase = 'reveal';
   const info = ROLE_INFO[myRole];
   $('reveal-img').src = SPRITE_DATA[myRole + '_front']; $('reveal-role').textContent = info.title; $('reveal-role').className = info.cls; $('reveal-goal').textContent = info.goal;
-  $('reveal-mates').textContent = myRole === 'venus' ? `Há 1 DEMOM e 1 CHEFE escondidos entre os ${N - 1} outros. Eles parecem VENUS normais!` : 'Para os outros você parece um VENUS normal. Só você sabe quem é.';
+  $('reveal-mates').textContent = myRole === 'venus' ? `Há 1 DEMOM e 1 CHEFE escondidos entre os ${N - 1} outros. Eles parecem VENUS normais!` : '';
+  if (myRole !== 'venus') { $('reveal-disguise').classList.remove('hidden'); const av = avatarCanvas(me, false); $('reveal-disguise-img').replaceWith(av); av.id = 'reveal-disguise-img'; $('reveal-disguise-text').innerHTML = `👀 <b>Ninguém vê que você é ${ROLE_INFO[myRole].title}.</b><br>Para todo mundo, você é o <b>VENUS ${me.color.name}</b> — só você se vê na forma verdadeira (e por 1 segundo quando ataca).`; } else $('reveal-disguise').classList.add('hidden');
   const touch = document.body.classList.contains('touch');
   const K = (k, t) => touch ? `<b>${t}</b>` : `<span class="key">${k}</span> ${t}`;
   $('reveal-controls').innerHTML = myRole === 'venus' ? `${K('E', 'USAR')} nas estações amarelas = missão<br>${K('R', 'REPORTAR')} perto de um corpo<br>Botão de emergência no Salão: ${K('E', 'USAR')}`
@@ -192,6 +195,7 @@ function setupHud() {
   $('role-banner').textContent = info.title; $('role-banner').className = info.cls;
   $('btn-kill').classList.toggle('hidden', me.kind === 'venus'); $('btn-kill').textContent = me.kind === 'chefe' ? 'ENGOLIR' : 'MATAR';
   $('btn-sab').classList.toggle('hidden', me.kind !== 'demom');
+  $('disguise').classList.toggle('hidden', me.kind === 'venus'); $('disguise').textContent = `👀 disfarçado de VENUS ${me.color.name} — ninguém sabe`;
   $('cd-label').textContent = me.kind === 'chefe' ? 'ENGOLIR' : 'MATAR';
   renderTaskList();
 }
@@ -286,7 +290,7 @@ function onKey(e) {
   if (k === 'r') playerReport();
   if (k === 'q') playerKill();
   if (k === 'f') openSabMenu();
-  if (k === 'escape') { if (G.inMinigame) closeMinigame(); else if (G.phase === 'play') togglePause(); }
+  if (k === 'escape') { if (G.inMinigame) closeMinigame(); else if (G.phase === 'play') togglePause(); else if (G.phase === 'meeting') { if (confirm('Sair da partida?')) quitGame(); } }
 }
 
 // ---------- Regras: matar, engolir, digerir, soltar ----------
@@ -415,9 +419,16 @@ function avatarCanvas(e, trueForm) {
 
 // ---------- Menu / pausa ----------
 function togglePause() { G.paused = !G.paused; $('menu').classList.toggle('hidden', !G.paused); }
+function quitGame() {
+  if (typeof M !== 'undefined' && M.active) { M.active = false; clearInterval(M.interval); M.interval = null; M.talkTimers.forEach(clearTimeout); M.talkTimers = []; }
+  closeMinigame(); G.paused = false; G.phase = 'start'; TUT.active = false; hideHint();
+  for (const id of ['meeting', 'eject', 'menu', 'win', 'hud', 'timeline', 'reveal', 'minigame']) $(id).classList.add('hidden');
+  $('start').classList.remove('hidden'); MUSIC.setMood('menu');
+}
 $('btn-menu').addEventListener('click', () => { if (G.phase === 'play') togglePause(); });
 $('btn-resume').addEventListener('click', togglePause);
-$('btn-restart').addEventListener('click', () => { G.paused = false; $('menu').classList.add('hidden'); $('hud').classList.add('hidden'); $('start').classList.remove('hidden'); G.phase = 'start'; });
+$('btn-restart').addEventListener('click', quitGame);
+$('btn-meet-quit').addEventListener('click', () => { if (confirm('Sair da partida?')) quitGame(); });
 $('btn-again').addEventListener('click', () => { MUSIC.setMood('menu'); $('win').classList.add('hidden'); $('hud').classList.add('hidden'); $('start').classList.remove('hidden'); G.phase = 'start'; });
 $('btn-sound').addEventListener('click', () => { const on = SFX.toggle(); $('btn-sound').textContent = on ? '🔊' : '🔇'; });
 $('btn-play').addEventListener('click', () => { SFX.unlock(); MUSIC.setMood('menu'); newGame(); });
@@ -436,6 +447,12 @@ $('players-range').addEventListener('input', renderCrowd); renderCrowd();
 $('player-name').value = localStorage.getItem('brods_name') || '';
 $('player-name').addEventListener('input', e => { localStorage.setItem('brods_name', e.target.value.slice(0, 14)); });
 $('player-name').addEventListener('keydown', e => e.stopPropagation());
+(() => {
+  const saved = localStorage.getItem('brods_role') || 'random';
+  $('role-pick').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.role === saved); b.addEventListener('click', () => { localStorage.setItem('brods_role', b.dataset.role); $('role-pick').querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); SFX.play('tick'); }); });
+  const cp = $('color-pick'); const ci = +(localStorage.getItem('brods_color') || 0);
+  VENUS_COLORS.forEach((c, i) => { const d = document.createElement('i'); d.style.background = c.css; d.title = c.name; if (i === ci) d.classList.add('on'); d.addEventListener('click', () => { localStorage.setItem('brods_color', i); cp.querySelectorAll('i').forEach(x => x.classList.remove('on')); d.classList.add('on'); SFX.play('tick'); }); cp.appendChild(d); });
+})();
 
 // ---------- Desenho ----------
 function resize() {

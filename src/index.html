@@ -28,6 +28,7 @@
       <div id="hud-center">
         <div id="room-name">Mansão</div>
         <div id="role-banner" class="venus">VENUS</div>
+        <div id="disguise" class="hidden"></div>
       </div>
       <div id="hud-right">
         <div id="hud-btns">
@@ -75,6 +76,8 @@
       </div>
       <div class="stripes" style="max-width:340px;margin:0 auto 12px"></div>
       <div class="opt-row name-row"><label for="player-name">Seu nome no jogo</label><input id="player-name" type="text" maxlength="14" placeholder="Ex.: Lucca" autocomplete="off"></div>
+      <div class="opt-row"><label>Quem você quer ser</label><div id="role-pick" class="seg"><button data-role="random" class="on">🎲 Sorteio</button><button data-role="venus">VENUS</button><button data-role="demom">DEMOM</button><button data-role="chefe">CHEFE</button></div></div>
+      <div class="opt-row"><label>Sua cor</label><div id="color-pick"></div></div>
       <div class="opt-row"><label>Personagens na mansão: <b id="players-val">8</b></label><input id="players-range" type="range" min="4" max="16" value="8" aria-label="Número de personagens"><div id="crowd" aria-hidden="true"></div></div>
       <button id="btn-play" class="big-btn">JOGAR</button>
       <button id="btn-tutorial" class="big-btn secondary" style="max-width:340px;margin:8px auto 0">🎓 MODO TREINO (primeira vez)</button>
@@ -83,7 +86,7 @@
         <button id="btn-settings" class="big-btn secondary">AJUSTES</button>
         <button id="btn-medals" class="big-btn secondary">MEDALHAS</button>
       </div>
-      <p class="hint">Teclado: setas/WASD anda · <b>E</b> usa · <b>R</b> reporta · <b>Q</b> mata/engole · <b>F</b> sabota · Celular: joystick e botões</p>
+      <p class="hint">Teclado: setas/WASD anda · <b>E</b> usa · <b>R</b> reporta · <b>Q</b> mata/engole · <b>F</b> sabota · Mouse: clique = matar/engolir ou usar, botão direito = reportar · Celular: joystick e botões</p>
       <p class="version">Criado por Lucca · versão de teste</p>
     </div>
   </div>
@@ -95,6 +98,7 @@
       <img id="reveal-img" alt="">
       <h1 id="reveal-role">VENUS</h1>
       <p id="reveal-goal"></p>
+      <div id="reveal-disguise" class="hidden"><img id="reveal-disguise-img" alt=""><span id="reveal-disguise-text"></span></div>
       <p id="reveal-mates" class="hint"></p>
       <div id="reveal-controls"></div>
     </div>
@@ -103,7 +107,7 @@
   <!-- Meeting -->
   <div id="meeting" class="overlay hidden">
     <div id="meet-card">
-      <div id="meet-head"><span id="meet-title">Reunião</span><span id="meet-timer">25</span></div>
+      <div id="meet-head"><span id="meet-title">Reunião</span><span style="display:flex;gap:8px;align-items:center"><span id="meet-timer">25</span><button id="btn-meet-quit" class="icon-btn" title="Sair da partida">✕</button></span></div>
       <div id="meet-body">
         <div id="meet-players"></div>
         <div id="meet-chat">
@@ -130,7 +134,7 @@
         <div class="how-box demom"><b>DEMOM</b><p>Você parece um VENUS normal. Chegue perto de alguém <b>sozinho</b> e aperte <span class="key">Q</span> / MATAR. Depois espere o tempo de recarga. Sabote com <span class="key">F</span> / SABOTAR (luzes, portas, fantasmas, missões). Fuja pelas <b>passagens secretas</b> (<span class="key">E</span>). Na reunião, <b>minta</b> e acuse outros. Vence quando sobrar pouco VENUS.</p></div>
         <div class="how-box chefe"><b>CHEFE</b><p>Você parece um VENUS normal. Chegue bem perto de alguém e aperte <span class="key">Q</span> / ENGOLIR. O engolido fica <b>60 s na sua barriga</b> — se você for expulso ou morto nesse tempo, ele escapa. Pode engolir até o DEMOM. Vence sendo o <b>último em pé</b>.</p></div>
       </div>
-      <p class="hint">Andar: setas ou WASD (celular: joystick) · <span class="key">E</span> usar · <span class="key">R</span> reportar · <span class="key">Q</span> matar/engolir · <span class="key">Esc</span> pausa</p>
+      <p class="hint">Andar: setas ou WASD (celular: joystick) · <span class="key">E</span> usar · <span class="key">R</span> reportar · <span class="key">Q</span> matar/engolir · <span class="key">Esc</span> pausa/sair · Mouse: clique esquerdo = matar/engolir (ou usar), direito = reportar</p>
       <button id="btn-how-close" class="big-btn">ENTENDI</button>
     </div>
   </div>
@@ -166,7 +170,7 @@
     <div class="card">
       <h2>Pausa</h2>
       <button id="btn-resume" class="big-btn">Continuar</button>
-      <button id="btn-restart" class="big-btn secondary">Nova partida</button>
+      <button id="btn-restart" class="big-btn secondary">Sair da partida</button>
     </div>
   </div>
 
