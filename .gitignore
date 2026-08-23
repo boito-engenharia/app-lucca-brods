@@ -1,3 +1,4 @@
+.wrangler/
 server/.wrangler/
 server/node_modules/
 node_modules/
