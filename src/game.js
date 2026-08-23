@@ -144,7 +144,7 @@ function countAlive(kind) { return G.entities.filter(e => alive(e) && e.kind ===
 
 // ---------- Nova partida ----------
 function newGame() {
-  buildWalk(); buildNav(); mapLayer = null; _lights = null;
+  buildWalk(); buildNav(); mapLayer = null; _lights = null; lightStatic = null;
   const N = SETTINGS.players = +$('players-range').value;
   // sorteio do papel do jogador (50% VENUS, 25% DEMOM, 25% CHEFE)
   const r = Math.random(); const myRole = r < .5 ? 'venus' : r < .75 ? 'demom' : 'chefe';
@@ -348,7 +348,8 @@ function completeTask(e, t) {
   checkWin();
 }
 function taskProgress() { let tot = 0, done = 0; for (const e of G.entities) { if (e.kind !== 'venus' || !e.alive) continue; for (const t of e.tasks) { tot++; if (t.done) done++; } } return { tot, done }; }
-function visibleStations() { const me = G.player; if (!me) return []; return me.tasks.map(t => { const p = taskPos(TASK_BY_ID[t.id]); return { x: p.x, y: p.y, done: t.done, icon: TASK_BY_ID[t.id].icon }; }); }
+let _vsCache = null, _vsT = -1;
+function visibleStations() { const me = G.player; if (!me) return []; if (_vsT === G.t && _vsCache) return _vsCache; _vsT = G.t; _vsCache = me.tasks.map(t => { const p = taskPos(TASK_BY_ID[t.id]); return { x: p.x, y: p.y, done: t.done, icon: TASK_BY_ID[t.id].icon }; }); return _vsCache; }
 function renderTaskList() {
   const me = G.player; const ul = $('task-list'); ul.innerHTML = '';
   const title = me.kind === 'venus' ? 'MISSÕES' : (innerWidth < 700 ? 'DISFARCE' : 'MISSÕES · DISFARCE');
@@ -427,11 +428,11 @@ $('players-range').addEventListener('input', renderCrowd); renderCrowd();
 
 // ---------- Desenho ----------
 function resize() {
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const dpr = Math.min(innerWidth < 700 ? 1.25 : 1.5, window.devicePixelRatio || 1);
   canvas.width = Math.floor(innerWidth * dpr); canvas.height = Math.floor(innerHeight * dpr);
   const small = innerWidth < 700 || innerHeight < 500; const tw = small ? 640 : 1000, th = small ? 760 : 620; G.cam.zoom = Math.max(canvas.width / tw, canvas.height / th);
 }
-window.addEventListener('resize', resize); resize();
+window.addEventListener('resize', () => { resize(); clearTimeout(G._rsT); G._rsT = setTimeout(() => { mapLayer = null; }, 250); }); resize();
 
 function drawEntity(e) {
   const me = G.player;
@@ -478,8 +479,9 @@ function render() {
   const z = G.cam.zoom; let sx = 0, sy = 0; if (G.shake > 0) { sx = (Math.random() - .5) * G.shake * z; sy = (Math.random() - .5) * G.shake * z; G.shake *= .85; if (G.shake < .3) G.shake = 0; }
   ctx.setTransform(z, 0, 0, z, canvas.width / 2 - G.cam.x * z + sx, canvas.height / 2 - G.cam.y * z + sy); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   drawMap(); drawSpecials(); drawPrints();
-  for (const b of G.bodies) drawBody(b);
-  const ents = G.entities.slice().sort((a, b) => a.y - b.y);
+  const vw = canvas.width / G.cam.zoom / 2 + 120, vh = canvas.height / G.cam.zoom / 2 + 120;
+  for (const b of G.bodies) if (Math.abs(b.x - G.cam.x) < vw && Math.abs(b.y - G.cam.y) < vh) drawBody(b);
+  const ents = G.entities.filter(e => Math.abs(e.x - G.cam.x) < vw && Math.abs(e.y - G.cam.y) < vh).sort((a, b) => a.y - b.y);
   for (const e of ents) drawEntity(e);
   drawFx();
   drawParticles();
@@ -503,7 +505,7 @@ function loop(now) {
   if (G.phase === 'start' || G.phase === 'end') return;
   G.t += dt;
   if (G.phase === 'play' && !G.paused && !G.inMinigame) update(dt);
-  render(); if (G.phase === 'play') drawMinimap();
+  render(); if (G.phase === 'play' && (G.frame = (G.frame || 0) + 1) % 6 === 0) drawMinimap();
 }
 
 // ---------- Boot ----------
