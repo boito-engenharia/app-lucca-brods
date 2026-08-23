@@ -150,7 +150,7 @@ function newGame() {
   const r = Math.random(); const myRole = G.forceRole || (r < .5 ? 'venus' : r < .75 ? 'demom' : 'chefe'); G.forceRole = null; G.events = [];
   const colors = VENUS_COLORS.slice();
   const ents = [];
-  const me = makeEntity(myRole, colors.shift(), false); me.name = 'Você'; ents.push(me);
+  const me = makeEntity(myRole, colors.shift(), false); me.name = playerName(); ents.push(me);
   const roles = []; const nDem = (N >= 10 && SETTINGS.demomCount >= 2) ? 2 : 1; for (let i = 0; i < nDem - (myRole === 'demom' ? 1 : 0); i++) roles.push('demom'); if (myRole !== 'chefe') roles.push('chefe'); while (roles.length < N - 1) roles.push('venus');
   // embaralha papéis dos bots
   for (let i = roles.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [roles[i], roles[j]] = [roles[j], roles[i]]; }
@@ -178,6 +178,7 @@ function newGame() {
   setTimeout(() => { $('reveal').classList.add('hidden'); G.phase = 'play'; $('hud').classList.remove('hidden'); setupHud(); G.hintT = 40; MUSIC.setMood(roleMood()); if (G.tutorial) { G.tutorial = false; tutorialBegin(); return; } showHint(myRole === 'venus' ? 'Siga as estações amarelas e aperte E pra fazer a missão. Viu um corpo? Aperte R.' : myRole === 'demom' ? 'Você parece um VENUS. Chegue perto de alguém sozinho e aperte Q pra MATAR (recarga: 12 s).' : 'Você parece um VENUS. Chegue bem perto de alguém e aperte Q pra ENGOLIR (recarga: 12 s).'); }, 5200);
 }
 function roleMood() { const me = G.player; if (!me) return 'menu'; if (!me.alive) return 'dark'; if (SAB.active && (SAB.active.type === 'lights' || SAB.active.type === 'ghosts') && me.kind !== 'demom') return 'tense'; return me.kind === 'venus' ? 'calm' : 'villain'; }
+function playerName() { const v = ($('player-name').value || '').trim(); return v ? v.slice(0, 14) : 'Você'; }
 function pickTasks(n) {
   const pool = TASKS.slice(); const out = []; const usedRooms = new Set();
   while (out.length < n && pool.length) {
@@ -432,6 +433,9 @@ $('btn-how').addEventListener('click', () => { SFX.unlock(); MUSIC.setMood('menu
 $('btn-how-close').addEventListener('click', () => { $('how').classList.add('hidden'); });
 function renderCrowd() { const n = +$('players-range').value; $('players-val').textContent = n; const c = $('crowd'); c.innerHTML = ''; for (let i = 0; i < n; i++) { const d = document.createElement('i'); const col = i === 0 ? '#ffd300' : VENUS_COLORS[i % VENUS_COLORS.length].css; d.style.background = col; c.appendChild(d); } }
 $('players-range').addEventListener('input', renderCrowd); renderCrowd();
+$('player-name').value = localStorage.getItem('brods_name') || '';
+$('player-name').addEventListener('input', e => { localStorage.setItem('brods_name', e.target.value.slice(0, 14)); });
+$('player-name').addEventListener('keydown', e => e.stopPropagation());
 
 // ---------- Desenho ----------
 function resize() {

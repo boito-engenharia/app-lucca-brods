@@ -372,6 +372,9 @@ body.touch #minimap{width:130px;height:70px}
 .tl-time{color:var(--muted);font-variant-numeric:tabular-nums;min-width:42px}
 .tl-ico{font-size:16px;min-width:22px;text-align:center}
 
+.name-row input{width:min(80vw,260px);border:3px solid #000;border-radius:12px;padding:9px 12px;font:900 16px var(--body);text-align:center;background:#fff;color:#000;box-shadow:var(--shadow)}
+.name-row input::placeholder{color:#999;font-weight:700}
+
 </style>
 </head>
 <body>
@@ -437,6 +440,7 @@ body.touch #minimap{width:130px;height:70px}
         <div class="role-chip chefe"><img data-sprite="chefe_front" alt=""><span>CHEFE</span><small>Engula todos e sobreviva</small></div>
       </div>
       <div class="stripes" style="max-width:340px;margin:0 auto 12px"></div>
+      <div class="opt-row name-row"><label for="player-name">Seu nome no jogo</label><input id="player-name" type="text" maxlength="14" placeholder="Ex.: Lucca" autocomplete="off"></div>
       <div class="opt-row"><label>Personagens na mansão: <b id="players-val">8</b></label><input id="players-range" type="range" min="4" max="16" value="8" aria-label="Número de personagens"><div id="crowd" aria-hidden="true"></div></div>
       <button id="btn-play" class="big-btn">JOGAR</button>
       <button id="btn-tutorial" class="big-btn secondary" style="max-width:340px;margin:8px auto 0">🎓 MODO TREINO (primeira vez)</button>
@@ -1660,7 +1664,7 @@ function newGame() {
   const r = Math.random(); const myRole = G.forceRole || (r < .5 ? 'venus' : r < .75 ? 'demom' : 'chefe'); G.forceRole = null; G.events = [];
   const colors = VENUS_COLORS.slice();
   const ents = [];
-  const me = makeEntity(myRole, colors.shift(), false); me.name = 'Você'; ents.push(me);
+  const me = makeEntity(myRole, colors.shift(), false); me.name = playerName(); ents.push(me);
   const roles = []; const nDem = (N >= 10 && SETTINGS.demomCount >= 2) ? 2 : 1; for (let i = 0; i < nDem - (myRole === 'demom' ? 1 : 0); i++) roles.push('demom'); if (myRole !== 'chefe') roles.push('chefe'); while (roles.length < N - 1) roles.push('venus');
   // embaralha papéis dos bots
   for (let i = roles.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [roles[i], roles[j]] = [roles[j], roles[i]]; }
@@ -1688,6 +1692,7 @@ function newGame() {
   setTimeout(() => { $('reveal').classList.add('hidden'); G.phase = 'play'; $('hud').classList.remove('hidden'); setupHud(); G.hintT = 40; MUSIC.setMood(roleMood()); if (G.tutorial) { G.tutorial = false; tutorialBegin(); return; } showHint(myRole === 'venus' ? 'Siga as estações amarelas e aperte E pra fazer a missão. Viu um corpo? Aperte R.' : myRole === 'demom' ? 'Você parece um VENUS. Chegue perto de alguém sozinho e aperte Q pra MATAR (recarga: 12 s).' : 'Você parece um VENUS. Chegue bem perto de alguém e aperte Q pra ENGOLIR (recarga: 12 s).'); }, 5200);
 }
 function roleMood() { const me = G.player; if (!me) return 'menu'; if (!me.alive) return 'dark'; if (SAB.active && (SAB.active.type === 'lights' || SAB.active.type === 'ghosts') && me.kind !== 'demom') return 'tense'; return me.kind === 'venus' ? 'calm' : 'villain'; }
+function playerName() { const v = ($('player-name').value || '').trim(); return v ? v.slice(0, 14) : 'Você'; }
 function pickTasks(n) {
   const pool = TASKS.slice(); const out = []; const usedRooms = new Set();
   while (out.length < n && pool.length) {
@@ -1942,6 +1947,9 @@ $('btn-how').addEventListener('click', () => { SFX.unlock(); MUSIC.setMood('menu
 $('btn-how-close').addEventListener('click', () => { $('how').classList.add('hidden'); });
 function renderCrowd() { const n = +$('players-range').value; $('players-val').textContent = n; const c = $('crowd'); c.innerHTML = ''; for (let i = 0; i < n; i++) { const d = document.createElement('i'); const col = i === 0 ? '#ffd300' : VENUS_COLORS[i % VENUS_COLORS.length].css; d.style.background = col; c.appendChild(d); } }
 $('players-range').addEventListener('input', renderCrowd); renderCrowd();
+$('player-name').value = localStorage.getItem('brods_name') || '';
+$('player-name').addEventListener('input', e => { localStorage.setItem('brods_name', e.target.value.slice(0, 14)); });
+$('player-name').addEventListener('keydown', e => e.stopPropagation());
 
 // ---------- Desenho ----------
 function resize() {
@@ -2607,7 +2615,7 @@ function finishVote() {
 }
 function showEject(e, cb) {
   const card = $('eject'); SFX.play('eject');
-  if (e) { $('eject-img').src = SPRITE_DATA[e.kind + '_front']; $('eject-img').classList.remove('hidden'); $('eject-text').textContent = `${e.name} foi expulso${e.name === 'Você' ? '' : ''}. ${SETTINGS.revealRole ? (e.name === 'Você' ? 'Você era' : e.name + ' era') + ' ' + ROLE_INFO[e.kind].title + (e.kind === 'venus' ? ' 😢' : ' 😈') : ''}`; }
+  if (e) { $('eject-img').src = SPRITE_DATA[e.kind + '_front']; $('eject-img').classList.remove('hidden'); $('eject-text').textContent = `${e === G.player ? 'Você foi expulso' : e.name + ' foi expulso'}. ${SETTINGS.revealRole ? (e === G.player ? 'Você era' : e.name + ' era') + ' ' + ROLE_INFO[e.kind].title + (e.kind === 'venus' ? ' 😢' : ' 😈') : ''}`; }
   else { $('eject-img').classList.add('hidden'); $('eject-text').textContent = 'Ninguém foi expulso (empate ou pulo).'; }
   card.classList.remove('hidden');
   setTimeout(() => { card.classList.add('hidden'); cb(); }, 3200);

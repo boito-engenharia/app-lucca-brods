@@ -170,7 +170,7 @@ function finishVote() {
 }
 function showEject(e, cb) {
   const card = $('eject'); SFX.play('eject');
-  if (e) { $('eject-img').src = SPRITE_DATA[e.kind + '_front']; $('eject-img').classList.remove('hidden'); $('eject-text').textContent = `${e.name} foi expulso${e.name === 'Você' ? '' : ''}. ${SETTINGS.revealRole ? (e.name === 'Você' ? 'Você era' : e.name + ' era') + ' ' + ROLE_INFO[e.kind].title + (e.kind === 'venus' ? ' 😢' : ' 😈') : ''}`; }
+  if (e) { $('eject-img').src = SPRITE_DATA[e.kind + '_front']; $('eject-img').classList.remove('hidden'); $('eject-text').textContent = `${e === G.player ? 'Você foi expulso' : e.name + ' foi expulso'}. ${SETTINGS.revealRole ? (e === G.player ? 'Você era' : e.name + ' era') + ' ' + ROLE_INFO[e.kind].title + (e.kind === 'venus' ? ' 😢' : ' 😈') : ''}`; }
   else { $('eject-img').classList.add('hidden'); $('eject-text').textContent = 'Ninguém foi expulso (empate ou pulo).'; }
   card.classList.remove('hidden');
   setTimeout(() => { card.classList.add('hidden'); cb(); }, 3200);
