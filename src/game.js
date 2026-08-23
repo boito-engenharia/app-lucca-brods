@@ -374,7 +374,7 @@ let _vsCache = null, _vsT = -1;
 function visibleStations() { const me = G.player; if (!me) return []; if (_vsT === G.t && _vsCache) return _vsCache; _vsT = G.t; _vsCache = me.tasks.map(t => { const p = taskPos(TASK_BY_ID[t.id]); return { x: p.x, y: p.y, done: t.done, icon: TASK_BY_ID[t.id].icon }; }); return _vsCache; }
 function renderTaskList() {
   const me = G.player; const ul = $('task-list'); ul.innerHTML = '';
-  const title = me.kind === 'venus' ? 'MISSÕES' : (innerWidth < 700 ? 'DISFARCE' : 'MISSÕES · DISFARCE');
+  const title = me.kind === 'venus' ? 'MISSÕES' : ((innerWidth < 700 || innerHeight < 560) ? 'DISFARCE' : 'MISSÕES · DISFARCE');
   $('task-title').firstChild.textContent = title + ' ';
   for (const t of me.tasks) { const d = TASK_BY_ID[t.id]; const li = document.createElement('li'); li.textContent = ROOM_BY_ID[d.room].name + ': ' + d.name; if (t.done) li.classList.add('done'); ul.appendChild(li); }
   if (G.guest) return;
