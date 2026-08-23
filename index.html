@@ -459,6 +459,20 @@ body.touch #minimap{width:130px;height:70px}
 .lobby-m.me{outline:3px solid var(--yellow)}
 .lobby-m i{width:18px;height:22px;border-radius:9px 9px 6px 6px;border:2px solid #000;display:block}
 
+/* ===== celular: tela inicial rola a partir do topo, sem cortar o logo ===== */
+@media (max-width:899px){
+  #start{justify-content:flex-start;align-items:center;padding:8px 6px 24px}
+  #start-card{margin:0 auto}
+  #start-logo{max-height:22vh;width:min(62vw,260px)}
+  .tagline{font-size:11px;letter-spacing:2px;margin:0 0 6px}
+  .role-chip{padding:6px 4px}.role-chip img{height:40px}.role-chip small{display:none}.role-chip span{font-size:13px}
+  #start-roles{margin:2px 0 6px}
+  .big-btn.online{font-size:13px;padding:9px}
+  .btn-row .big-btn{font-size:12px;padding:8px 4px}
+  #rank-box{font-size:11px}
+  #start-right .hint{display:none}
+}
+
 </style>
 </head>
 <body>
