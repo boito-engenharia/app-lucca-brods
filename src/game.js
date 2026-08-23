@@ -144,7 +144,7 @@ function countAlive(kind) { return G.entities.filter(e => alive(e) && e.kind ===
 
 // ---------- Nova partida ----------
 function newGame() {
-  buildWalk(); buildNav();
+  buildWalk(); buildNav(); mapLayer = null; _lights = null;
   const N = SETTINGS.players = +$('players-range').value;
   // sorteio do papel do jogador (50% VENUS, 25% DEMOM, 25% CHEFE)
   const r = Math.random(); const myRole = r < .5 ? 'venus' : r < .75 ? 'demom' : 'chefe';
@@ -261,7 +261,9 @@ function updateCooldownHud() {
   if (me.kind === 'venus' || !alive(me)) { $('cooldown').classList.add('hidden'); return; }
   $('cooldown').classList.remove('hidden');
   const belly = G.entities.filter(e => e.swallowed && e.alive);
-  $('cd-val').textContent = me.killCd > 0 ? Math.ceil(me.killCd) + 's' : 'PRONTO' + (me.kind === 'chefe' && belly.length ? ` · barriga: ${belly.map(b => b.name + ' ' + Math.ceil(b.swallowT) + 's').join(', ')}` : '');
+  const max = me.kind === 'chefe' ? SETTINGS.swallowCooldown : SETTINGS.killCooldown; const pct = me.killCd > 0 ? Math.round(100 * (1 - me.killCd / max)) : 100;
+  $('cd-ring').style.setProperty('--p', pct + '%'); $('cd-ring').classList.toggle('ready', me.killCd <= 0); $('cd-num').textContent = me.killCd > 0 ? Math.ceil(me.killCd) : 'OK';
+  $('cd-val').textContent = me.killCd > 0 ? 'recarregando' : 'pronto' + (me.kind === 'chefe' && belly.length ? ` · barriga: ${belly.map(b => b.name + ' ' + Math.ceil(b.swallowT) + 's').join(', ')}` : '');
 }
 
 // ---------- Ações do jogador ----------
@@ -286,12 +288,13 @@ function onKey(e) {
 }
 
 // ---------- Regras: matar, engolir, digerir, soltar ----------
+function shakeAndFlash(strength, flash) { G.shake = Math.max(G.shake || 0, strength); if (flash) { const f = $('flash'); f.classList.remove('on'); void f.offsetWidth; f.classList.add('on'); } }
 function killEntity(killer, victim) {
   if (!alive(victim)) return;
   killer.killCd = SETTINGS.killCooldown; killer.revealT = 1.1; killer.atkDir = victim.x < killer.x ? 'left' : 'right';
   if (victim.shield) { victim.shield = false; SFX.play('bad'); if (victim === G.player) { toast('🧪 A Poção de Escudo te salvou!'); unlockMedal('shield'); } return; }
   recordDeath(victim, killer);
-  spawnFx(victim.x, victim.y - 20, '#ff1a1a', 16, 140, .8);
+  spawnFx(victim.x, victim.y - 20, '#ff1a1a', 16, 140, .8); if (victim === G.player || (G.player.alive && Math.abs(victim.x - G.player.x) < 520 && Math.abs(victim.y - G.player.y) < 320)) shakeAndFlash(victim === G.player ? 14 : 6, victim === G.player);
   victim.alive = false; victim.ghost = true; victim.moving = false;
   G.bodies.push({ x: victim.x, y: victim.y, ent: victim, t: G.t, room: roomAt(victim.x, victim.y) });
   SFX.play('kill');
@@ -306,7 +309,7 @@ function swallowEntity(chefe, victim) {
   if (victim.shield) { victim.shield = false; SFX.play('bad'); if (victim === G.player) { toast('🧪 A Poção de Escudo te salvou do CHEFE!'); unlockMedal('shield'); } return; }
   recordDeath(victim, chefe); G.swallowCount = (G.swallowCount || 0) + (chefe === G.player ? 1 : 0);
   victim.swallowed = true; victim.swallowT = SETTINGS.digestTime; victim.moving = false; victim.vanishT = .5; victim.vx0 = victim.x; victim.vy0 = victim.y; victim.eater = chefe;
-  spawnFx(victim.x, victim.y - 20, '#b98cff', 14, 120, .7);
+  spawnFx(victim.x, victim.y - 20, '#b98cff', 14, 120, .7); if (victim === G.player) shakeAndFlash(10, true);
   SFX.play('swallow');
   if (victim === G.player) { toast('O CHEFE engoliu você! Se ele for expulso ou morto em 60 s, você sai vivo…'); }
   aiOnKill(chefe, victim);
@@ -394,6 +397,7 @@ function endGame(winner) {
   const ro = $('win-roster'); ro.innerHTML = '';
   for (const e of G.entities) { const d = document.createElement('div'); d.className = 'mp'; const c = avatarCanvas(e, true); d.appendChild(c); const n = document.createElement('span'); n.className = 'nm'; n.textContent = `${e.name} — ${ROLE_INFO[e.kind].title}${e.alive ? '' : ' ☠'}`; d.appendChild(n); ro.appendChild(d); }
   $('win').classList.remove('hidden');
+  const cf = $('confetti'); cf.innerHTML = ''; if (iWon) { const cols = ['#1fbf6b', '#ffd300', '#ff1a1a', '#b98cff', '#fff']; for (let i = 0; i < 70; i++) { const d = document.createElement('i'); d.style.left = Math.random() * 100 + '%'; d.style.background = cols[i % cols.length]; d.style.animationDuration = (2.5 + Math.random() * 2.5) + 's'; d.style.animationDelay = (Math.random() * 1.5) + 's'; d.style.transform = `rotate(${Math.random() * 360}deg)`; cf.appendChild(d); } }
 }
 function avatarCanvas(e, trueForm) {
   const c = document.createElement('canvas'); c.width = 72; c.height = 72; const x = c.getContext('2d');
@@ -469,7 +473,8 @@ function drawBody(b) {
 }
 function render() {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const z = G.cam.zoom; ctx.setTransform(z, 0, 0, z, canvas.width / 2 - G.cam.x * z, canvas.height / 2 - G.cam.y * z); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  const z = G.cam.zoom; let sx = 0, sy = 0; if (G.shake > 0) { sx = (Math.random() - .5) * G.shake * z; sy = (Math.random() - .5) * G.shake * z; G.shake *= .85; if (G.shake < .3) G.shake = 0; }
+  ctx.setTransform(z, 0, 0, z, canvas.width / 2 - G.cam.x * z + sx, canvas.height / 2 - G.cam.y * z + sy); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   drawMap(); drawSpecials(); drawPrints();
   for (const b of G.bodies) drawBody(b);
   const ents = G.entities.slice().sort((a, b) => a.y - b.y);
@@ -478,18 +483,32 @@ function render() {
   drawParticles();
   drawLighting();
 }
+// ---------- Minimapa ----------
+function drawMinimap() {
+  const mc = $('minimap'); if (!mc) return; const x = mc.getContext('2d'); const W = mc.width, H = mc.height;
+  x.clearRect(0, 0, W, H); const sx = (W - 8) / WORLD.w, sy = (H - 8) / WORLD.h; const sc = Math.min(sx, sy); const ox = (W - WORLD.w * sc) / 2, oy = (H - WORLD.h * sc) / 2;
+  const me = G.player;
+  for (const c of CORRIDORS) { x.fillStyle = 'rgba(255,255,255,.18)'; x.fillRect(ox + c.x * sc, oy + c.y * sc, c.w * sc, c.h * sc); }
+  for (const r of ROOMS) { x.fillStyle = (G.room === r) ? 'rgba(255,211,0,.55)' : 'rgba(255,255,255,.28)'; x.fillRect(ox + r.x * sc, oy + r.y * sc, r.w * sc, r.h * sc); }
+  if (SAB.active && SAB.active.type === 'lights') { x.fillStyle = '#ffd300'; x.beginPath(); x.arc(ox + SAB.POWER.x * sc, oy + SAB.POWER.y * sc, 3, 0, 7); x.fill(); }
+  if (SAB.active && SAB.active.type === 'ghosts') { x.fillStyle = '#ff1a1a'; x.beginPath(); x.arc(ox + SAB.BELL.x * sc, oy + SAB.BELL.y * sc, 3 + Math.sin(G.t * 8), 0, 7); x.fill(); }
+  for (const m of visibleStations()) if (!m.done) { x.fillStyle = '#ffd300'; x.fillRect(ox + m.x * sc - 2, oy + m.y * sc - 2, 4, 4); }
+  if (me) { x.fillStyle = '#fff'; x.beginPath(); x.arc(ox + me.x * sc, oy + me.y * sc, 3.5, 0, 7); x.fill(); x.strokeStyle = '#000'; x.lineWidth = 1; x.stroke(); }
+}
 function loop(now) {
   requestAnimationFrame(loop);
   const dt = Math.min(.05, (now - G.last) / 1000); G.last = now;
   if (G.phase === 'start' || G.phase === 'end') return;
   G.t += dt;
   if (G.phase === 'play' && !G.paused && !G.inMinigame) update(dt);
-  render();
+  render(); if (G.phase === 'play') drawMinimap();
 }
 
 // ---------- Boot ----------
 loadSettings(); loadMedals();
+$('loading-logo').src = SPRITE_DATA.logo_word || SPRITE_DATA.logo_main;
 loadSprites().then(() => {
+  $('loading').classList.add('hidden');
   $('start-logo').src = SPRITE_DATA.logo_main;
   document.querySelectorAll('[data-sprite]').forEach(im => im.src = SPRITE_DATA[im.dataset.sprite]);
   G.last = performance.now(); requestAnimationFrame(loop);

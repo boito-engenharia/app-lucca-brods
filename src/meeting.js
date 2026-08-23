@@ -89,12 +89,14 @@ function playerSays() {
   } else if (defending) {
     const o = pick(G.entities.filter(e => e.isBot && alive(e))); if (o) setTimeout(() => { if (M.active) say(o, pick(['Tá bom, acredito.', 'Hmm… vamos ver.', 'Então quem foi?'])); }, 900);
   } else if (/(quem|algu[eé]m viu|alguem viu|onde)/.test(low)) {
-    const o = pick(G.entities.filter(e => e.isBot && alive(e))); if (o) setTimeout(() => { if (M.active) say(o, o.ai.witness ? `Eu vi! Foi o ${o.ai.witness.killer.name}!` : pick([`Eu não vi nada, estava ${placeOf(o)}.`, `Não vi ninguém por perto.`, `Eu estava ${placeOf(o)} o tempo todo.`])); }, 900);
+    const o = pick(G.entities.filter(e => e.isBot && alive(e))); if (o) setTimeout(() => { if (M.active) say(o, o.ai.witness ? `Eu vi! Foi ${on(o.ai.witness.killer)}!` : pick([`Eu não vi nada, estava ${placeOf(o)}.`, `Não vi ninguém por perto.`, `Eu estava ${placeOf(o)} o tempo todo.`])); }, 900);
   } else {
     const o = pick(G.entities.filter(e => e.isBot && alive(e))); if (o && Math.random() < .7) setTimeout(() => { if (M.active) say(o, pick(['Hmm.', 'Entendi.', 'Será?', 'Vamos com calma.', 'Alguém tem certeza de algo?'])); }, 800);
   }
 }
 function bump(e, n) { M.suspicion.set(e.id, (M.suspicion.get(e.id) || 0) + n); }
+function on(e, cap) { return e === G.player ? (cap ? 'Você' : 'você') : 'o ' + e.name; }
+function dn(e) { return e === G.player ? 'de você' : 'do ' + e.name; }
 function nm(e, cap) { if (e === G.player) return cap ? 'Você' : 'você'; return e.name; }
 function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
 function prep(r) { return ['jardim', 'porao', 'sotao', 'salao', 'quarto', 'laboratorio'].includes(r.id) ? 'no' : 'na'; }
@@ -109,15 +111,15 @@ function scheduleBotTalk() {
   // reporter bot
   if (info.reporter.isBot) add(() => say(info.reporter, info.type === 'body' ? pick([`Achei o corpo ${info.body.room ? prep(info.body.room) + ' ' + info.body.room.name : 'no corredor'}! Não tinha ninguém por perto.`, `Gente, ${victim === G.player ? 'você' : 'o ' + victim.name} está morto ${info.body.room ? prep(info.body.room) + ' ' + info.body.room.name : 'no corredor'}!`]) : 'Chamei porque vi algo estranho.'), t), t += 1500;
   // testemunhas
-  for (const b of bots) if (b.ai.witness && alive(b.ai.witness.killer)) { const w = b.ai.witness; add(() => { say(b, pick([`EU VI! O ${w.killer.name} atacou ${w.victim === G.player ? 'você' : 'o ' + w.victim.name}${w.room ? ' ' + prep(w.room) + ' ' + w.room.name : ''}!`, `Foi o ${w.killer.name}! Eu vi com esses olhos!`])); M.accusations.push({ by: b, who: w.killer }); bump(w.killer, 60); }, t); t += 1600; }
+  for (const b of bots) if (b.ai.witness && alive(b.ai.witness.killer)) { const w = b.ai.witness; add(() => { say(b, pick([`EU VI! ${on(w.killer, true)} atacou ${w.victim === G.player ? 'você' : 'o ' + w.victim.name}${w.room ? ' ' + prep(w.room) + ' ' + w.room.name : ''}!`, `Foi ${on(w.killer)}! Eu vi com esses olhos!`])); M.accusations.push({ by: b, who: w.killer }); bump(w.killer, 60); }, t); t += 1600; }
   // quem estava no cômodo do corpo
   if (bodyRoom) for (const b of bots) { if (b === info.reporter || b.ai.witness) continue; if (b.roomAtMeeting === bodyRoom && b.kind === 'venus' && Math.random() < .8) { add(() => say(b, pick([`Eu estava ${prep(ROOM_BY_ID[bodyRoom])} ${ROOM_BY_ID[bodyRoom].name} também, mas não vi nada…`, `Passei por lá agora há pouco e estava tudo normal!`])), t); t += 1500; } }
   // genéricos
   const rest = bots.filter(b => !b.ai.witness && b !== info.reporter).sort(() => Math.random() - .5).slice(0, 4);
   for (const b of rest) {
     add(() => {
-      if (b.kind === 'venus') { const others = G.entities.filter(o => o !== b && alive(o)); const s = pick(others); const r = Math.random(); if (r < .45) say(b, pick([`Eu estava ${placeOf(b)} fazendo missão.`, `Não vi nada suspeito, estava ${placeOf(b)}.`, `Alguém viu alguma coisa?`])); else if (r < .65 && s) { say(b, pick([`Estou desconfiado do ${s.name}, estava sozinho.`, `O ${s.name} sumiu por um tempo…`])); M.accusations.push({ by: b, who: s }); bump(s, 12); } else say(b, pick(['Vamos pular, não tem prova.', 'Cuidado pra não expulsar um inocente!', 'Fiquem em dupla, é mais seguro.'])); }
-      else { const vens = G.entities.filter(o => o !== b && alive(o) && o.kind === 'venus' && o !== G.player); const s = pick(vens) || pick(G.entities.filter(o => o !== b && alive(o))); const r = Math.random(); if (r < .5) say(b, pick([`Eu estava ${fakePlace(b)} fazendo missão.`, `Não vi nada, estava ${fakePlace(b)}.`])); else if (s) { say(b, pick([`Acho que foi o ${s.name}, ele estava sozinho.`, `O ${s.name} estava estranho perto de lá…`])); M.accusations.push({ by: b, who: s }); bump(s, 12); } }
+      if (b.kind === 'venus') { const others = G.entities.filter(o => o !== b && alive(o)); const s = pick(others); const r = Math.random(); if (r < .45) say(b, pick([`Eu estava ${placeOf(b)} fazendo missão.`, `Não vi nada suspeito, estava ${placeOf(b)}.`, `Alguém viu alguma coisa?`])); else if (r < .65 && s) { say(b, pick([`Estou desconfiado ${dn(s)}, estava sozinho.`, `${on(s, true)} sumiu por um tempo…`])); M.accusations.push({ by: b, who: s }); bump(s, 12); } else say(b, pick(['Vamos pular, não tem prova.', 'Cuidado pra não expulsar um inocente!', 'Fiquem em dupla, é mais seguro.'])); }
+      else { const vens = G.entities.filter(o => o !== b && alive(o) && o.kind === 'venus' && o !== G.player); const s = pick(vens) || pick(G.entities.filter(o => o !== b && alive(o))); const r = Math.random(); if (r < .5) say(b, pick([`Eu estava ${fakePlace(b)} fazendo missão.`, `Não vi nada, estava ${fakePlace(b)}.`])); else if (s) { say(b, pick([`Acho que foi ${on(s)}, estava sozinho.`, `${on(s, true)} estava estranho perto de lá…`])); M.accusations.push({ by: b, who: s }); bump(s, 12); } }
     }, t); t += 1500 + Math.random() * 800;
   }
 }

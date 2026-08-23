@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>BRODS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏚️</text></svg>">
 <style>
 /*__CSS__*/
 </style>
@@ -13,6 +14,8 @@
 <body>
 <div id="app">
   <canvas id="game"></canvas>
+  <div id="flash"></div>
+  <div id="loading"><img id="loading-logo" alt=""><div class="stripes" style="width:220px;margin:14px auto"></div><p>Carregando a mansão…</p></div>
 
   <!-- HUD -->
   <div id="hud" class="hidden">
@@ -27,8 +30,11 @@
         <div id="role-banner" class="venus">VENUS</div>
       </div>
       <div id="hud-right">
-        <button id="btn-sound" class="icon-btn" title="Som">🔊</button>
-        <button id="btn-menu" class="icon-btn" title="Menu">☰</button>
+        <div id="hud-btns">
+          <button id="btn-sound" class="icon-btn" title="Som">🔊</button>
+          <button id="btn-menu" class="icon-btn" title="Menu">☰</button>
+        </div>
+        <canvas id="minimap" width="184" height="100"></canvas>
       </div>
     </div>
     <div id="prompt" class="hidden"><span class="key">E</span> <span id="prompt-text">Usar</span></div>
@@ -46,7 +52,7 @@
         <button id="btn-use" class="act-btn">USAR</button>
       </div>
     </div>
-    <div id="cooldown" class="hidden"><span id="cd-label">MATAR</span> <span id="cd-val"></span></div>
+    <div id="cooldown" class="hidden"><div id="cd-ring"><span id="cd-num"></span></div><div><span id="cd-label">MATAR</span><br><span id="cd-val"></span></div></div>
   </div>
 
   <!-- Minigame overlay -->
@@ -155,6 +161,7 @@
 
   <!-- End screen -->
   <div id="win" class="overlay hidden">
+    <div id="confetti"></div>
     <div class="card" id="win-card">
       <h1 id="win-title">VENUS VENCERAM!</h1>
       <p id="win-sub"></p>
